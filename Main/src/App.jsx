@@ -3,9 +3,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Auth from './pages/Auth/Auth';
-import Predict from './pages/Predict';
 import Simulate from './pages/Simulate';
-import Chat from './pages/Chat';
 import Compare from './pages/Compare';
 import Contact from './pages/Contact';
 import './App.css';
@@ -21,9 +19,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/predict" element={<Predict />} />
             <Route path="/simulate" element={<Simulate />} />
-            <Route path="/chat" element={<Chat />} />
             <Route path="/compare" element={<Compare />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth />} />

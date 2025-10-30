@@ -6,9 +6,7 @@ export const APP_DESCRIPTION = 'AI-based Aerodynamic Simulation Platform';
 export const ROUTES = {
   HOME: '/',
   DASHBOARD: '/dashboard',
-  PREDICT: '/predict',
   SIMULATE: '/simulate',
-  CHAT: '/chat',
   TEAM: '/team',
   CONTACT: '/contact',
 };
