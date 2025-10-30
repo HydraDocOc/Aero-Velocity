@@ -267,54 +267,428 @@ const Simulate = () => {
           </motion.div>
         ) : circuitData ? (
           <>
-            {/* Lap Time Results */}
+            {/* Hero Lap Time Banner */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="results-grid"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              style={{
+                background: 'linear-gradient(135deg, rgba(255, 42, 77, 0.15) 0%, rgba(255, 135, 0, 0.1) 50%, rgba(0, 210, 255, 0.15) 100%)',
+                borderRadius: '1.5rem',
+                padding: '2.5rem',
+                marginBottom: '2rem',
+                border: '1px solid rgba(255, 42, 77, 0.3)',
+                boxShadow: '0 20px 60px rgba(255, 42, 77, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
             >
-              <div className="result-card glass">
-                <div className="result-icon" style={{ background: 'linear-gradient(135deg, #ff2a4d, #ff6b35)' }}>
-                  <Trophy size={32} />
+              {/* Background Glow Effect */}
+              <div style={{
+                position: 'absolute',
+                top: '-50%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                height: '200%',
+                background: 'radial-gradient(ellipse at center, rgba(255, 42, 77, 0.2) 0%, transparent 60%)',
+                filter: 'blur(40px)',
+                pointerEvents: 'none'
+              }}></div>
+
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ 
+                  textAlign: 'center', 
+                  marginBottom: '2rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.5rem 1.5rem',
+                    background: 'rgba(255, 42, 77, 0.2)',
+                    borderRadius: '2rem',
+                    border: '1px solid rgba(255, 42, 77, 0.4)'
+                  }}>
+                    <Trophy size={20} color="#ff2a4d" />
+                    <span style={{ color: '#ff2a4d', fontWeight: '700', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      Simulated Lap Times
+                    </span>
+                  </div>
+                  <h2 style={{ 
+                    fontSize: '2.5rem', 
+                    fontWeight: '800', 
+                    color: '#fff',
+                    margin: 0,
+                    textShadow: '0 4px 20px rgba(0, 0, 0, 0.5)'
+                  }}>
+                    {selectedTrack}
+                  </h2>
                 </div>
-                <div className="result-content">
-                  <div className="result-label">Qualifying Lap Time</div>
-                  <div className="result-value">{circuitData.qualifying_lap_time}</div>
-                  <div className="result-subtext">Optimal single lap</div>
+
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', 
+                  gap: '1.5rem' 
+                }}>
+                  {/* Qualifying Time */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(255, 42, 77, 0.2) 0%, rgba(255, 42, 77, 0.05) 100%)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    borderRadius: '1.25rem',
+                    padding: '1.75rem',
+                    border: '1px solid rgba(255, 42, 77, 0.3)',
+                    textAlign: 'center',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '150%',
+                      height: '150%',
+                      background: 'radial-gradient(circle, rgba(255, 42, 77, 0.1) 0%, transparent 70%)',
+                      pointerEvents: 'none'
+                    }}></div>
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '56px',
+                        height: '56px',
+                        background: 'linear-gradient(135deg, #ff2a4d 0%, #ff1040 100%)',
+                        borderRadius: '1rem',
+                        marginBottom: '1rem',
+                        boxShadow: '0 8px 24px rgba(255, 42, 77, 0.4)'
+                      }}>
+                        <Trophy size={28} color="#fff" />
+                      </div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem', fontWeight: '600' }}>
+                        Qualifying
+                      </div>
+                      <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff', marginBottom: '0.5rem', textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)' }}>
+                        {circuitData.qualifying_lap_time}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)' }}>
+                        Optimal single lap
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Race Time */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.2) 0%, rgba(0, 255, 136, 0.1) 100%)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    borderRadius: '1.25rem',
+                    padding: '1.75rem',
+                    border: '1px solid rgba(0, 210, 255, 0.3)',
+                    textAlign: 'center',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '150%',
+                      height: '150%',
+                      background: 'radial-gradient(circle, rgba(0, 210, 255, 0.1) 0%, transparent 70%)',
+                      pointerEvents: 'none'
+                    }}></div>
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '56px',
+                        height: '56px',
+                        background: 'linear-gradient(135deg, #00d2ff 0%, #00ff88 100%)',
+                        borderRadius: '1rem',
+                        marginBottom: '1rem',
+                        boxShadow: '0 8px 24px rgba(0, 210, 255, 0.4)'
+                      }}>
+                        <Clock size={28} color="#fff" />
+                      </div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem', fontWeight: '600' }}>
+                        Race Pace
+                      </div>
+                      <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff', marginBottom: '0.5rem', textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)' }}>
+                        {circuitData.race_lap_time}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)' }}>
+                        Average race lap
+                      </div>
                 </div>
               </div>
 
-              <div className="result-card glass">
-                <div className="result-icon" style={{ background: 'linear-gradient(135deg, #00d2ff, #00ff88)' }}>
-                  <Clock size={32} />
+                  {/* Top Speed */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(0, 210, 255, 0.1) 100%)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    borderRadius: '1.25rem',
+                    padding: '1.75rem',
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    textAlign: 'center',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '150%',
+                      height: '150%',
+                      background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)',
+                      pointerEvents: 'none'
+                    }}></div>
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '56px',
+                        height: '56px',
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #00d2ff 100%)',
+                        borderRadius: '1rem',
+                        marginBottom: '1rem',
+                        boxShadow: '0 8px 24px rgba(139, 92, 246, 0.4)'
+                      }}>
+                        <Zap size={28} color="#fff" />
+                      </div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem', fontWeight: '600' }}>
+                        Top Speed
+                      </div>
+                      <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff', marginBottom: '0.5rem', textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)' }}>
+                        {circuitData.top_speed?.toFixed(0) || 'N/A'}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)' }}>
+                        km/h maximum
                 </div>
-                <div className="result-content">
-                  <div className="result-label">Race Lap Time</div>
-                  <div className="result-value">{circuitData.race_lap_time}</div>
-                  <div className="result-subtext">Average race pace</div>
                 </div>
               </div>
 
-              <div className="result-card glass">
-                <div className="result-icon" style={{ background: 'linear-gradient(135deg, #8b5cf6, #00d2ff)' }}>
-                  <Zap size={32} />
+                  {/* Corner Speed */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(255, 135, 0, 0.2) 0%, rgba(255, 184, 0, 0.1) 100%)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    borderRadius: '1.25rem',
+                    padding: '1.75rem',
+                    border: '1px solid rgba(255, 135, 0, 0.3)',
+                    textAlign: 'center',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '150%',
+                      height: '150%',
+                      background: 'radial-gradient(circle, rgba(255, 135, 0, 0.1) 0%, transparent 70%)',
+                      pointerEvents: 'none'
+                    }}></div>
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '56px',
+                        height: '56px',
+                        background: 'linear-gradient(135deg, #ff8700 0%, #ffb800 100%)',
+                        borderRadius: '1rem',
+                        marginBottom: '1rem',
+                        boxShadow: '0 8px 24px rgba(255, 135, 0, 0.4)'
+                      }}>
+                        <TrendingUp size={28} color="#fff" />
+                      </div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem', fontWeight: '600' }}>
+                        Corner Speed
+                      </div>
+                      <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#fff', marginBottom: '0.5rem', textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)' }}>
+                        {circuitData.avg_corner_speed?.toFixed(0) || 'N/A'}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.6)' }}>
+                        km/h average
+                      </div>
+                    </div>
                 </div>
-                <div className="result-content">
-                  <div className="result-label">Top Speed</div>
-                  <div className="result-value">{circuitData.top_speed?.toFixed(1) || 'N/A'} km/h</div>
-                  <div className="result-subtext">Maximum velocity</div>
                 </div>
               </div>
+            </motion.div>
 
-              <div className="result-card glass">
-                <div className="result-icon" style={{ background: 'linear-gradient(135deg, #ff8700, #ffb800)' }}>
-                  <TrendingUp size={32} />
+            {/* Hero Lap Time Gain Banner */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              style={{
+                background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.15) 0%, rgba(0, 210, 255, 0.1) 50%, rgba(139, 92, 246, 0.15) 100%)',
+                borderRadius: '1.5rem',
+                padding: '2.5rem',
+                marginBottom: '2rem',
+                border: '1px solid rgba(0, 255, 136, 0.3)',
+                boxShadow: '0 20px 60px rgba(0, 255, 136, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Background Glow Effect */}
+              <div style={{
+                position: 'absolute',
+                top: '-50%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                height: '200%',
+                background: 'radial-gradient(ellipse at center, rgba(0, 255, 136, 0.25) 0%, transparent 60%)',
+                filter: 'blur(40px)',
+                pointerEvents: 'none'
+              }}></div>
+
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ 
+                  textAlign: 'center', 
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.5rem 1.5rem',
+                    background: 'rgba(0, 255, 136, 0.2)',
+                    borderRadius: '2rem',
+                    border: '1px solid rgba(0, 255, 136, 0.4)'
+                  }}>
+                    <Zap size={20} color="#00ff88" />
+                    <span style={{ color: '#00ff88', fontWeight: '700', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      Performance Optimization
+                    </span>
+                  </div>
                 </div>
-                <div className="result-content">
-                  <div className="result-label">Avg Corner Speed</div>
-                  <div className="result-value">{circuitData.avg_corner_speed?.toFixed(1) || 'N/A'} km/h</div>
-                  <div className="result-subtext">Through corners</div>
+
+                <div style={{ 
+                  textAlign: 'center',
+                  maxWidth: '600px',
+                  margin: '0 auto'
+                }}>
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.25) 0%, rgba(0, 210, 255, 0.15) 100%)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    borderRadius: '1.5rem',
+                    padding: '2.5rem',
+                    border: '2px solid rgba(0, 255, 136, 0.4)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '200%',
+                      height: '200%',
+                      background: 'radial-gradient(circle, rgba(0, 255, 136, 0.15) 0%, transparent 70%)',
+                      pointerEvents: 'none'
+                    }}></div>
+                    
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '72px',
+                        height: '72px',
+                        background: 'linear-gradient(135deg, #00ff88 0%, #00d2ff 100%)',
+                        borderRadius: '1.25rem',
+                        marginBottom: '1.5rem',
+                        boxShadow: '0 12px 32px rgba(0, 255, 136, 0.5)',
+                        animation: 'pulse 2s ease-in-out infinite'
+                      }}>
+                        <TrendingUp size={40} color="#fff" strokeWidth={2.5} />
+                      </div>
+                      
+                      <div style={{ 
+                        color: '#94a3b8', 
+                        fontSize: '0.85rem', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '0.15em', 
+                        marginBottom: '1rem', 
+                        fontWeight: '700'
+                      }}>
+                        Estimated Lap Time Gain
+                      </div>
+                      
+                      <div style={{ 
+                        fontSize: '4rem', 
+                        fontWeight: '900', 
+                        background: 'linear-gradient(135deg, #00ff88 0%, #00d2ff 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                        marginBottom: '0.75rem',
+                        textShadow: '0 0 30px rgba(0, 255, 136, 0.5)',
+                        lineHeight: 1
+                      }}>
+                        +{circuitData.setup_recommendations?.estimated_laptime_gain || 
+                           circuitData.time_gain_quali?.toFixed(2) || '0.00'} Tenths
+                      </div>
+                      
+                      <div style={{ 
+                        fontSize: '0.95rem', 
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        marginBottom: '1.25rem',
+                        lineHeight: 1.5
+                      }}>
+                        With ML-optimized setup configuration
+                      </div>
+
+                      {/* Additional Performance Metrics */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '1rem',
+                        marginTop: '1.5rem',
+                        paddingTop: '1.5rem',
+                        borderTop: '1px solid rgba(0, 255, 136, 0.2)'
+                      }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>
+                            Qualifying Gain
+                          </div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#00ff88' }}>
+                            +{circuitData.time_gain_quali?.toFixed(2) || '0.00'} Tenths
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>
+                            Race Gain
+                          </div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#00d2ff' }}>
+                            +{circuitData.time_gain_race?.toFixed(2) || '0.00'} Tenths
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -416,15 +790,6 @@ const Simulate = () => {
                       </div>
                     </div>
                   )}
-
-                  {/* Time Gain */}
-                  <div className="recommendation-item" style={{ textAlign: 'center' }}>
-                    <div className="rec-label">Estimated Lap Time Gain</div>
-                    <div className="rec-value" style={{ color: '#00ff88', fontSize: '24px' }}>
-                      +{circuitData.setup_recommendations.estimated_laptime_gain || 
-                         circuitData.time_gain_quali?.toFixed(3) || '0.000'}s
-                    </div>
-                  </div>
                 </div>
               </motion.div>
             )}
@@ -435,10 +800,63 @@ const Simulate = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.6 }}
-                className="critical-corners-panel glass"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  borderRadius: '1.5rem',
+                  padding: '2rem',
+                  border: '1px solid rgba(0, 210, 255, 0.2)',
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
               >
-                <h3><Target size={20} /> ML-Analyzed Critical Corners & Sections</h3>
-                <div className="corners-list" style={{ display: 'grid', gap: '15px' }}>
+                {/* Header Glow Effect */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '80%',
+                  height: '100px',
+                  background: 'radial-gradient(ellipse at center, rgba(0, 210, 255, 0.15) 0%, transparent 70%)',
+                  filter: 'blur(30px)',
+                  pointerEvents: 'none'
+                }}></div>
+
+                <h3 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  fontSize: '1.5rem',
+                  fontWeight: '700',
+                  color: '#e2e8f0',
+                  marginBottom: '1.75rem',
+                  position: 'relative',
+                  zIndex: 1
+                }}>
+                  <div style={{
+                    background: 'linear-gradient(135deg, #00d2ff 0%, #0096ff 100%)',
+                    padding: '0.5rem',
+                    borderRadius: '0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 15px rgba(0, 210, 255, 0.3)'
+                  }}>
+                    <Target size={20} />
+                  </div>
+                  ML-Analyzed Critical Corners & Sections
+                </h3>
+
+                <div style={{ 
+                  display: 'grid', 
+                  gap: '1.25rem',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                  position: 'relative',
+                  zIndex: 1
+                }}>
                   {circuitData.critical_corners.map((corner, idx) => {
                     // Handle both string and object formats
                     const isObject = typeof corner === 'object';
@@ -449,66 +867,177 @@ const Simulate = () => {
                     const physicsNote = isObject ? corner.physics_note : '';
                     const laptimeImpact = isObject ? corner.laptime_impact : '';
                     
+                    const isCritical = importance?.includes('CRITICAL');
+                    const isHigh = importance?.includes('HIGH');
+                    const isMedium = importance?.includes('MEDIUM');
+                    
                     return (
-                      <div 
-                        key={idx} 
-                        className="corner-item" 
+                      <motion.div 
+                        key={idx}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, delay: idx * 0.05 }}
+                        whileHover={{ 
+                          scale: 1.02,
+                          transition: { duration: 0.2 }
+                        }}
                         style={{
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          borderRadius: '12px',
-                          padding: '16px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '8px'
+                          background: `linear-gradient(135deg, 
+                            ${isCritical ? 'rgba(255, 42, 77, 0.1)' : 
+                              isHigh ? 'rgba(255, 135, 0, 0.1)' : 
+                              isMedium ? 'rgba(0, 210, 255, 0.1)' : 'rgba(100, 116, 139, 0.1)'} 0%, 
+                            rgba(255, 255, 255, 0.02) 100%)`,
+                          borderRadius: '1rem',
+                          padding: '1.25rem',
+                          border: `1px solid ${
+                            isCritical ? 'rgba(255, 42, 77, 0.3)' :
+                            isHigh ? 'rgba(255, 135, 0, 0.3)' :
+                            isMedium ? 'rgba(0, 210, 255, 0.3)' : 'rgba(100, 116, 139, 0.2)'
+                          }`,
+                          boxShadow: `0 4px 20px ${
+                            isCritical ? 'rgba(255, 42, 77, 0.1)' :
+                            isHigh ? 'rgba(255, 135, 0, 0.1)' :
+                            isMedium ? 'rgba(0, 210, 255, 0.1)' : 'rgba(0, 0, 0, 0.2)'
+                          }`,
+                          position: 'relative',
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease'
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div className="corner-number" style={{
-                            background: importance?.includes('CRITICAL') ? '#ff2a4d' :
-                                       importance?.includes('HIGH') ? '#ff8700' :
-                                       importance?.includes('MEDIUM') ? '#00d2ff' : '#666',
+                        {/* Corner Number Badge */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                          <div style={{
+                            background: isCritical ? 'linear-gradient(135deg, #ff2a4d 0%, #ff1040 100%)' :
+                                       isHigh ? 'linear-gradient(135deg, #ff8700 0%, #ff6b00 100%)' :
+                                       isMedium ? 'linear-gradient(135deg, #00d2ff 0%, #0096ff 100%)' : 
+                                       'linear-gradient(135deg, #64748b 0%, #475569 100%)',
                             color: '#fff',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            fontWeight: 'bold',
-                            fontSize: '12px',
-                            minWidth: '80px',
-                            textAlign: 'center'
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.75rem',
+                            fontWeight: '800',
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            boxShadow: `0 4px 12px ${
+                              isCritical ? 'rgba(255, 42, 77, 0.4)' :
+                              isHigh ? 'rgba(255, 135, 0, 0.4)' :
+                              isMedium ? 'rgba(0, 210, 255, 0.4)' : 'rgba(100, 116, 139, 0.3)'
+                            }`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
                           }}>
+                            {isCritical && '🔴'}
+                            {isHigh && '🟠'}
+                            {isMedium && '🔵'}
                             {importance || `#${idx + 1}`}
                           </div>
-                          <div className="corner-name" style={{ flex: 1, fontSize: '16px', fontWeight: 'bold', color: '#fff' }}>
+                          <div style={{ 
+                            flex: 1, 
+                            fontSize: '1.125rem', 
+                            fontWeight: '700', 
+                            color: '#f1f5f9',
+                            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+                          }}>
                             {cornerType}
                           </div>
                         </div>
                         
+                        {/* Speed Range */}
                         {speedRange && (
-                          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Gauge size={14} color="#00d2ff" />
-                            Speed Range: <span style={{ color: '#00d2ff', fontWeight: 'bold' }}>{speedRange}</span>
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '0.75rem',
+                            padding: '0.75rem',
+                            background: 'rgba(0, 210, 255, 0.05)',
+                            borderRadius: '0.75rem',
+                            marginBottom: '0.75rem',
+                            border: '1px solid rgba(0, 210, 255, 0.2)'
+                          }}>
+                            <div style={{
+                              background: 'linear-gradient(135deg, #00d2ff 0%, #0096ff 100%)',
+                              padding: '0.5rem',
+                              borderRadius: '0.5rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 2px 8px rgba(0, 210, 255, 0.3)'
+                            }}>
+                              <Gauge size={16} color="#fff" />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+                                Speed Range
+                              </div>
+                              <div style={{ fontSize: '0.9rem', color: '#00d2ff', fontWeight: '700' }}>
+                                {speedRange}
+                              </div>
+                            </div>
                           </div>
                         )}
                         
+                        {/* Recommendation */}
                         {recommendation && (
-                          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', background: 'rgba(0, 255, 136, 0.1)', padding: '8px', borderRadius: '6px', borderLeft: '3px solid #00ff88' }}>
-                            <span style={{ color: '#00ff88', fontWeight: 'bold' }}>Recommendation: </span>
-                            {recommendation}
+                          <div style={{ 
+                            fontSize: '0.875rem', 
+                            color: '#cbd5e1', 
+                            background: 'rgba(0, 255, 136, 0.08)', 
+                            padding: '0.875rem', 
+                            borderRadius: '0.75rem', 
+                            borderLeft: '3px solid #00ff88',
+                            marginBottom: '0.75rem',
+                            lineHeight: '1.5'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                              <span style={{ fontSize: '1rem' }}>💡</span>
+                              <span style={{ color: '#00ff88', fontWeight: '700', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Recommendation
+                              </span>
+                            </div>
+                            <div style={{ color: '#e2e8f0' }}>
+                              {recommendation}
+                            </div>
                           </div>
                         )}
                         
+                        {/* Physics Note */}
                         {physicsNote && (
-                          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', fontStyle: 'italic' }}>
-                            💡 {physicsNote}
+                          <div style={{ 
+                            fontSize: '0.8rem', 
+                            color: '#94a3b8', 
+                            fontStyle: 'italic',
+                            padding: '0.625rem 0.875rem',
+                            background: 'rgba(100, 116, 139, 0.1)',
+                            borderRadius: '0.5rem',
+                            marginBottom: '0.75rem',
+                            borderLeft: '2px solid rgba(100, 116, 139, 0.3)'
+                          }}>
+                            ⚡ {physicsNote}
                           </div>
                         )}
                         
+                        {/* Lap Time Impact */}
                         {laptimeImpact && (
-                          <div style={{ fontSize: '12px', color: '#ff8700', fontWeight: 'bold', marginTop: '4px' }}>
-                            ⏱️ Lap Time Impact: {laptimeImpact}
-                          </div>
+                          <div style={{ 
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontSize: '0.875rem', 
+                            color: '#fbbf24', 
+                            fontWeight: '700',
+                            padding: '0.625rem',
+                            background: 'rgba(251, 191, 36, 0.1)',
+                            borderRadius: '0.5rem',
+                            border: '1px solid rgba(251, 191, 36, 0.2)'
+                          }}>
+                            <span style={{ fontSize: '1rem' }}>⏱️</span>
+                            <span>Lap Time Impact:</span>
+                            <span style={{ color: '#fff' }}>{laptimeImpact}</span>
+                    </div>
                         )}
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>

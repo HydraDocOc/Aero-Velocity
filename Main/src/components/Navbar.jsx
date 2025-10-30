@@ -14,7 +14,7 @@ const Navbar = () => {
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/simulate', label: 'Simulate' },
     { path: '/compare', label: 'Compare' },
-    { path: '/contact', label: 'Contact' },
+    { path: '/corner-performance', label: 'Corner Analysis' },
   ];
 
   return (

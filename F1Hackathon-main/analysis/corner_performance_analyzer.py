@@ -411,7 +411,7 @@ class CornerPerformanceAnalyzer:
             'Red Bull Racing': {'drag_coefficient': 0.690, 'cl_front': 1.65, 'cl_rear': 2.1},  # 3rd - Fell behind in 2024
             'Mercedes': {'drag_coefficient': 0.695, 'cl_front': 1.68, 'cl_rear': 2.12},  # 4th - Improved late season
             'Aston Martin': {'drag_coefficient': 0.710, 'cl_front': 1.55, 'cl_rear': 2.0},  # Mid-pack
-            'RB': {'drag_coefficient': 0.715, 'cl_front': 1.58, 'cl_rear': 2.02},  # Mid-pack
+            'Racing Bulls': {'drag_coefficient': 0.715, 'cl_front': 1.58, 'cl_rear': 2.02},  # Mid-pack
             'Alpine': {'drag_coefficient': 0.720, 'cl_front': 1.50, 'cl_rear': 1.95},  # Lower mid-pack
             'Haas': {'drag_coefficient': 0.725, 'cl_front': 1.52, 'cl_rear': 1.98},  # Lower mid-pack
             'Williams': {'drag_coefficient': 0.730, 'cl_front': 1.48, 'cl_rear': 1.92},  # Struggled
@@ -486,6 +486,13 @@ class CornerPerformanceAnalyzer:
         print(f"     Medium corners: {min(medium_values):.2f} - {max(medium_values):.2f} km/h (range: {max(medium_values)-min(medium_values):.2f})")
         fast_values = [results[t]['fast'] for t in results]
         print(f"     Fast corners: {min(fast_values):.2f} - {max(fast_values):.2f} km/h (range: {max(fast_values)-min(fast_values):.2f})")
+        
+        # Specifically log Racing Bulls data
+        if 'Racing Bulls' in results:
+            print(f"\n  🏎️ Racing Bulls specific data:")
+            print(f"     {results['Racing Bulls']}")
+        else:
+            print(f"\n  ⚠️ Racing Bulls NOT in results! Available teams: {list(results.keys())}")
         
         return results
 

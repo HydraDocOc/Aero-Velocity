@@ -58,7 +58,7 @@ const Dashboard = () => {
   const [performanceData, setPerformanceData] = useState(null);
   const [radarData, setRadarData] = useState([]);
   const [scatterData, setScatterData] = useState([]);
-  const [heatmapData, setHeatmapData] = useState([]);
+  const [trendData, setTrendData] = useState([]);
 
   // Load tracks on mount
   useEffect(() => {
@@ -112,11 +112,13 @@ const Dashboard = () => {
         }
 
         // Get component analysis
+        console.log('🔧 Fetching component analysis...');
         const componentsResponse = await mlService.analyzeComponents(
-          selectedTeam,
-          aeroConfig,
+          selectedTeam, 
+          aeroConfig, 
           selectedTrack
         );
+        console.log('🔧 Components response:', componentsResponse);
         setComponentData(componentsResponse);
 
         // Get performance prediction
@@ -175,19 +177,48 @@ const Dashboard = () => {
         }
         setScatterData(scatter);
 
-        // Generate heatmap data (Component performance across tracks)
-        if (componentsResponse && Object.keys(componentsResponse).length > 0) {
-          const heatmap = Object.entries(componentsResponse).map(([name, data]) => ({
-            component: name.length > 15 ? name.substring(0, 15) + '...' : name,
-            efficiency: (data.efficiency * 100).toFixed(0),
-            improvement: (data.improvement_potential * 100).toFixed(0),
-            drag: (data.drag_contribution * 100).toFixed(0) || 0
-          }));
-          setHeatmapData(heatmap);
+        // Generate performance trend data (Wing angle vs Lap Time)
+        const trends = [];
+        const baseTime = 82.5; // Base lap time in seconds
+        const currentDrag = carSettings.dragCoefficient;
+        const currentDownforce = carSettings.clFront + carSettings.clRear;
+        
+        // Generate data points for different wing angles
+        for (let angle = 18; angle <= 32; angle += 2) {
+          const angleRatio = angle / 25; // 25 is mid-point
+          const dragPenalty = (angleRatio - 1) * 0.5; // More wing = more drag
+          const downforceGain = (angleRatio - 1) * 0.3; // More wing = more downforce
+          
+          const lapTime = baseTime + dragPenalty - downforceGain + (Math.random() - 0.5) * 0.1;
+          const topSpeed = 340 - (angle - 25) * 2.5; // Higher angle = lower top speed
+          const cornerSpeed = 180 + (angle - 25) * 1.8; // Higher angle = higher corner speed
+          
+          trends.push({
+            angle: angle,
+            lapTime: parseFloat(lapTime.toFixed(2)),
+            topSpeed: parseFloat(topSpeed.toFixed(1)),
+            cornerSpeed: parseFloat(cornerSpeed.toFixed(1)),
+            isCurrent: Math.abs(angle - 25) < 1
+          });
         }
+        setTrendData(trends);
 
       } catch (error) {
         console.error('Error loading dashboard data:', error);
+        
+        // Set fallback trend data on error
+        const fallbackTrends = [];
+        for (let angle = 18; angle <= 32; angle += 2) {
+          fallbackTrends.push({
+            angle: angle,
+            lapTime: 82.5 + (angle - 25) * 0.08,
+            topSpeed: 340 - (angle - 25) * 2.5,
+            cornerSpeed: 180 + (angle - 25) * 1.8,
+            isCurrent: Math.abs(angle - 25) < 1
+          });
+        }
+        setTrendData(fallbackTrends);
+        
         setAiInsights([
           {
             id: 1,
@@ -483,47 +514,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Component Heatmap Bar Chart */}
-          <div className="chart-card" style={{ padding: '20px', marginBottom: '20px' }}>
-            <h4 style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <BarChart3 size={18} color="#ff8700" />
-              Component Performance Heatmap
-            </h4>
-            {heatmapData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <RechartsBarChart data={heatmapData} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0, 210, 255, 0.1)" />
-                  <XAxis 
-                    type="number" 
-                    domain={[0, 100]}
-                    tick={{ fill: 'rgba(255, 255, 255, 0.7)', fontSize: 11 }}
-                  />
-                  <YAxis 
-                    type="category" 
-                    dataKey="component" 
-                    tick={{ fill: 'rgba(255, 255, 255, 0.7)', fontSize: 10 }}
-                    width={120}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      background: 'rgba(0, 0, 0, 0.9)',
-                      border: '2px solid #00d2ff',
-                      borderRadius: '8px',
-                      color: '#fff'
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="efficiency" fill="#00ff88" name="Efficiency %" />
-                  <Bar dataKey="improvement" fill="#ff8700" name="Improvement Potential %" />
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ padding: '60px', textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)' }}>
-                {loading ? 'Loading component data...' : 'Adjust settings to see heatmap'}
-              </div>
-            )}
-          </div>
-
           {/* Quick Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
             <div className="chart-card" style={{ padding: '15px', textAlign: 'center' }}>
@@ -531,7 +521,7 @@ const Dashboard = () => {
                 Top Speed
               </div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#00ff88' }}>
-                {performanceData?.top_speed?.toFixed(0) || 'N/A'}
+                {performanceData?.top_speed?.toFixed(2) || 'N/A'}
               </div>
               <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)' }}>km/h</div>
             </div>
@@ -540,7 +530,7 @@ const Dashboard = () => {
                 Corner Speed
               </div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#00d2ff' }}>
-                {performanceData?.avg_corner_speed?.toFixed(0) || 'N/A'}
+                {performanceData?.avg_corner_speed?.toFixed(2) || 'N/A'}
               </div>
               <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)' }}>km/h</div>
             </div>

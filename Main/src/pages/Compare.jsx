@@ -1,41 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Zap, TrendingUp, Users, Target, Award, AlertCircle } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  Cell,
-  LineChart,
-  Line,
-  Area,
-  ComposedChart
-} from 'recharts';
+import { Upload, Zap, TrendingUp, Users, Target, Award, AlertCircle, Check, X, ArrowRight } from 'lucide-react';
 import mlService, { TEAMS } from '../services/mlService';
 import './compare.css';
 
 const Compare = () => {
   const [imageA, setImageA] = useState(null);
   const [imageB, setImageB] = useState(null);
-  const [team1, setTeam1] = useState('Red Bull Racing');
+  const [team1, setTeam1] = useState('McLaren');
   const [team2, setTeam2] = useState('Ferrari');
   const [selectedTrack, setSelectedTrack] = useState('Monaco');
   const [tracks, setTracks] = useState([]);
-  const [categoryA, setCategoryA] = useState('Front Wing');
-  const [categoryB, setCategoryB] = useState('Front Wing');
-  const [benchmarkA, setBenchmarkA] = useState('');
-  const [benchmarkB, setBenchmarkB] = useState('');
   const [comparing, setComparing] = useState(false);
   const [results, setResults] = useState(null);
   const [comparisonMode, setComparisonMode] = useState('teams'); // 'teams' or 'images'
-  const [radarData, setRadarData] = useState([]);
+  const [componentAnalysis, setComponentAnalysis] = useState(null);
+  const [selectedComponent, setSelectedComponent] = useState('Front Wing'); // Component to analyze in image mode
   
   const fileInputA = useRef(null);
   const fileInputB = useRef(null);
+
+  // Available components for analysis
+  const AVAILABLE_COMPONENTS = [
+    { name: 'Front Wing', icon: '🏁', description: 'Analyze wing angle, endplates, Y250 vortex' },
+    { name: 'Rear Wing', icon: '✈️', description: 'Analyze DRS efficiency, drag profile' },
+    { name: 'Sidepods', icon: '💨', description: 'Analyze undercut design, cooling' },
+    { name: 'Diffuser', icon: '🌊', description: 'Analyze expansion angle, strakes' },
+    { name: 'Floor', icon: '⬇️', description: 'Analyze ground effect, edge wings' }
+  ];
 
   // Load tracks
   useEffect(() => {
@@ -80,275 +71,102 @@ const Compare = () => {
     }
 
     setComparing(true);
+    setResults(null);
+    setComponentAnalysis(null);
 
     try {
+      console.log(`🏎️ Fetching FastF1-based comparison for ${team1} vs ${team2}...`);
       const comparison = await mlService.compareTeams(team1, team2, selectedTrack);
       
-      // Transform ML data to display format
-      const componentMetrics = [];
-      if (comparison.component_comparison) {
-        Object.entries(comparison.component_comparison).forEach(([component, data]) => {
-          componentMetrics.push({
-            label: component,
-            valueA: parseFloat((data.team1_efficiency * 100).toFixed(1)),
-            valueB: parseFloat((data.team2_efficiency * 100).toFixed(1)),
-            team1: team1,
-            team2: team2
-          });
-        });
-      }
-
-      // Add performance metrics
-      const perfMetrics = [
-        {
-          label: 'Top Speed',
-          valueA: parseFloat(comparison.performance_comparison?.top_speed?.team1?.toFixed(1) || '340'),
-          valueB: parseFloat(comparison.performance_comparison?.top_speed?.team2?.toFixed(1) || '338'),
-          team1: team1,
-          team2: team2,
-          unit: 'km/h'
-        },
-        {
-          label: 'Corner Speed',
-          valueA: parseFloat(comparison.performance_comparison?.corner_speed?.team1?.toFixed(1) || '180'),
-          valueB: parseFloat(comparison.performance_comparison?.corner_speed?.team2?.toFixed(1) || '182'),
-          team1: team1,
-          team2: team2,
-          unit: 'km/h'
-        },
-        {
-          label: 'L/D Ratio',
-          valueA: parseFloat(comparison.performance_comparison?.ld_ratio?.team1?.toFixed(2) || '4.5'),
-          valueB: parseFloat(comparison.performance_comparison?.ld_ratio?.team2?.toFixed(2) || '4.3'),
-          team1: team1,
-          team2: team2,
-          unit: ''
-        }
-      ];
-
-      componentMetrics.push(...perfMetrics);
-
-      // Generate head-to-head performance comparison data
-      const performanceComparisonData = [
-        {
-          name: 'Top Speed',
-          team1Value: perfMetrics[0].valueA,
-          team2Value: perfMetrics[0].valueB,
-          winner: perfMetrics[0].valueA > perfMetrics[0].valueB ? team1 : team2,
-          unit: 'km/h'
-        },
-        {
-          name: 'Corner Speed',
-          team1Value: perfMetrics[1].valueA,
-          team2Value: perfMetrics[1].valueB,
-          winner: perfMetrics[1].valueA > perfMetrics[1].valueB ? team1 : team2,
-          unit: 'km/h'
-        },
-        {
-          name: 'L/D Ratio',
-          team1Value: perfMetrics[2].valueA,
-          team2Value: perfMetrics[2].valueB,
-          winner: perfMetrics[2].valueA > perfMetrics[2].valueB ? team1 : team2,
-          unit: ''
-        },
-        {
-          name: 'Acceleration',
-          team1Value: 2.6 - (perfMetrics[0].valueA - 340) * 0.005, // Lower is better
-          team2Value: 2.6 - (perfMetrics[0].valueB - 340) * 0.005,
-          winner: (2.6 - (perfMetrics[0].valueA - 340) * 0.005) < (2.6 - (perfMetrics[0].valueB - 340) * 0.005) ? team1 : team2,
-          unit: 's',
-          inverted: true
-        }
-      ];
-      setRadarData(performanceComparisonData);
-
-      // REAL ML-ANALYZED INSIGHTS
-      const insights = [];
+      console.log('FastF1 Comparison Data:', comparison);
       
-      // 1. Lap Time Winner - CRITICAL
-      if (Math.abs(comparison.lap_time_delta) > 0.001) {
-        const winner = comparison.lap_time_delta < 0 ? team1 : team2;
-        const loser = comparison.lap_time_delta < 0 ? team2 : team1;
-        insights.push({
-          type: 'success',
-          message: `🏆 ${winner} is ${Math.abs(comparison.lap_time_delta).toFixed(3)}s faster per lap than ${loser}`,
-          icon: 'award'
-        });
-      } else {
-        insights.push({
-          type: 'info',
-          message: `⚖️ Both teams are equal - lap time delta: 0.000s (extremely close competition!)`,
-          icon: 'info'
-        });
-      }
-
-      // 2. Top Speed Analysis
-      if (comparison.performance_comparison?.top_speed) {
-        const speedDelta = comparison.performance_comparison.top_speed.delta;
-        const team1Speed = comparison.performance_comparison.top_speed.team1;
-        const team2Speed = comparison.performance_comparison.top_speed.team2;
-        
-        if (Math.abs(speedDelta) > 1) {
-          const speedWinner = speedDelta > 0 ? team1 : team2;
-          insights.push({
-            type: speedDelta > 0 ? 'success' : 'info',
-            message: `⚡ ${speedWinner} has ${Math.abs(speedDelta).toFixed(1)} km/h higher top speed (${team1}: ${team1Speed.toFixed(1)} km/h vs ${team2}: ${team2Speed.toFixed(1)} km/h)`,
-            icon: 'zap'
-          });
-        }
-      }
-
-      // 3. Corner Speed Analysis
-      if (comparison.performance_comparison?.corner_speed) {
-        const cornerDelta = comparison.performance_comparison.corner_speed.delta;
-        const team1Corner = comparison.performance_comparison.corner_speed.team1;
-        const team2Corner = comparison.performance_comparison.corner_speed.team2;
-        
-        if (Math.abs(cornerDelta) > 1) {
-          const cornerWinner = cornerDelta > 0 ? team1 : team2;
-          insights.push({
-            type: cornerDelta > 0 ? 'success' : 'info',
-            message: `🎯 ${cornerWinner} has superior cornering: ${Math.abs(cornerDelta).toFixed(1)} km/h faster avg (${team1}: ${team1Corner.toFixed(1)} vs ${team2}: ${team2Corner.toFixed(1)} km/h)`,
-            icon: 'target'
-          });
-        }
-      }
-
-      // 4. L/D Ratio (Efficiency)
-      if (comparison.performance_comparison?.ld_ratio) {
-        const ldDelta = comparison.performance_comparison.ld_ratio.delta;
-        const team1LD = comparison.performance_comparison.ld_ratio.team1;
-        const team2LD = comparison.performance_comparison.ld_ratio.team2;
-        
-        if (Math.abs(ldDelta) > 0.1) {
-          const effWinner = ldDelta > 0 ? team1 : team2;
-          insights.push({
-            type: 'info',
-            message: `📊 ${effWinner} has ${Math.abs((ldDelta / team2LD) * 100).toFixed(1)}% better aero efficiency (L/D: ${team1}: ${team1LD.toFixed(2)} vs ${team2}: ${team2LD.toFixed(2)})`,
-            icon: 'info'
-          });
-        }
-      }
-
-      // 5. Acceleration Advantage
-      if (comparison.performance_comparison?.acceleration) {
-        const accelDelta = comparison.performance_comparison.acceleration.delta;
-        if (Math.abs(accelDelta) > 0.05) {
-          const accelWinner = accelDelta < 0 ? team1 : team2; // Lower time = faster
-          insights.push({
-            type: 'info',
-            message: `🚀 ${accelWinner} has ${Math.abs(accelDelta).toFixed(2)}s faster 0-100 km/h acceleration`,
-            icon: 'zap'
-          });
-        }
-      }
-
-      // 6. Lap Time Details
-      insights.push({
-        type: 'info',
-        message: `⏱️ ${selectedTrack} Qualifying: ${team1} ${comparison.team1_lap_time} vs ${team2} ${comparison.team2_lap_time}`,
-        icon: 'info'
-      });
-
-      // 7. Aero Configuration Philosophy
-      if (comparison.aero_configs) {
-        const config1 = comparison.aero_configs.team1;
-        const config2 = comparison.aero_configs.team2;
-        
-        const cdDiff = config1.drag_coefficient - config2.drag_coefficient;
-        const dfDiff = (config1.cl_front + config1.cl_rear) - (config2.cl_front + config2.cl_rear);
-        
-        if (Math.abs(cdDiff) > 0.01) {
-          const lowerDragTeam = cdDiff < 0 ? team1 : team2;
-          insights.push({
-            type: 'info',
-            message: `💨 ${lowerDragTeam} runs ${Math.abs(cdDiff).toFixed(3)} lower drag coefficient (Cd: ${config1.drag_coefficient.toFixed(3)} vs ${config2.drag_coefficient.toFixed(3)})`,
-            icon: 'info'
-          });
-        }
-        
-        if (Math.abs(dfDiff) > 0.1) {
-          const higherDFTeam = dfDiff > 0 ? team1 : team2;
-          insights.push({
-            type: 'info',
-            message: `🔽 ${higherDFTeam} generates ${Math.abs(dfDiff).toFixed(2)} more total downforce (CL: ${(config1.cl_front + config1.cl_rear).toFixed(2)} vs ${(config2.cl_front + config2.cl_rear).toFixed(2)})`,
-            icon: 'target'
-          });
-        }
-      }
-
-      // 8. Component Best-in-Class
-      if (componentMetrics.length > 3) {
-        const bestComponent = componentMetrics.reduce((max, metric) => 
-          Math.max(metric.valueA, metric.valueB) > Math.max(max.valueA || 0, max.valueB || 0) ? metric : max
-        , {});
-        
-        if (bestComponent.valueA > bestComponent.valueB) {
-          insights.push({
-            type: 'success',
-            message: `🥇 ${team1}'s ${bestComponent.label} is best-in-class: ${(bestComponent.valueA - bestComponent.valueB).toFixed(1)}% advantage`,
-            icon: 'award'
-          });
-        } else if (bestComponent.valueB > bestComponent.valueA) {
-          insights.push({
-            type: 'success',
-            message: `🥇 ${team2}'s ${bestComponent.label} is best-in-class: ${(bestComponent.valueB - bestComponent.valueA).toFixed(1)}% advantage`,
-            icon: 'award'
-          });
-        }
-      }
-
+      // Extract performance metrics
+      const perfComparison = comparison.performance_comparison;
+      
       setResults({
-        metrics: componentMetrics,
-        winner: comparison.faster_team,
-        insights: insights,
-        lapTimeDelta: comparison.lap_time_delta,
-        team1LapTime: comparison.team1_lap_time,
-        team2LapTime: comparison.team2_lap_time
+          team1: team1,
+          team2: team2,
+        track: selectedTrack,
+        lapTime: {
+          team1: comparison.team1_lap_time,
+          team2: comparison.team2_lap_time,
+          delta: comparison.lap_time_delta,
+          winner: comparison.faster_team
+        },
+        topSpeed: {
+          team1: perfComparison.top_speed.team1,
+          team2: perfComparison.top_speed.team2,
+          delta: perfComparison.top_speed.delta,
+          winner: perfComparison.top_speed.team1 > perfComparison.top_speed.team2 ? team1 : team2
+        },
+        cornerSpeed: {
+          team1: perfComparison.corner_speed.team1,
+          team2: perfComparison.corner_speed.team2,
+          delta: perfComparison.corner_speed.delta,
+          winner: perfComparison.corner_speed.team1 > perfComparison.corner_speed.team2 ? team1 : team2
+        },
+        ldRatio: {
+          team1: perfComparison.ld_ratio.team1,
+          team2: perfComparison.ld_ratio.team2,
+          delta: perfComparison.ld_ratio.delta,
+          winner: perfComparison.ld_ratio.team1 > perfComparison.ld_ratio.team2 ? team1 : team2
+        },
+        acceleration: {
+          team1: perfComparison.acceleration.team1,
+          team2: perfComparison.acceleration.team2,
+          delta: perfComparison.acceleration.delta,
+          winner: perfComparison.acceleration.team1 < perfComparison.acceleration.team2 ? team1 : team2
+        },
+        drag: {
+          team1: perfComparison.drag_coefficient.team1,
+          team2: perfComparison.drag_coefficient.team2,
+          delta: perfComparison.drag_coefficient.delta,
+          winner: perfComparison.drag_coefficient.team1 < perfComparison.drag_coefficient.team2 ? team1 : team2
+        },
+        downforce: {
+          team1: perfComparison.downforce.team1,
+          team2: perfComparison.downforce.team2,
+          delta: perfComparison.downforce.delta,
+          winner: perfComparison.downforce.team1 > perfComparison.downforce.team2 ? team1 : team2
+        },
+        dataSource: comparison.data_source,
+        team1Rank: comparison.team1_rank,
+        team2Rank: comparison.team2_rank,
+        insights: generateInsights(comparison, team1, team2)
       });
+
+      // Component comparison
+      const components = comparison.component_comparison;
+      setComponentAnalysis({
+        frontWing: {
+          team1: components['Front Wing'].team1_efficiency * 100,
+          team2: components['Front Wing'].team2_efficiency * 100,
+          winner: components['Front Wing'].team1_efficiency > components['Front Wing'].team2_efficiency ? team1 : team2
+        },
+        rearWing: {
+          team1: components['Rear Wing'].team1_efficiency * 100,
+          team2: components['Rear Wing'].team2_efficiency * 100,
+          winner: components['Rear Wing'].team1_efficiency > components['Rear Wing'].team2_efficiency ? team1 : team2
+        },
+        sidepods: {
+          team1: components['Sidepods'].team1_efficiency * 100,
+          team2: components['Sidepods'].team2_efficiency * 100,
+          winner: components['Sidepods'].team1_efficiency > components['Sidepods'].team2_efficiency ? team1 : team2
+        },
+        diffuser: {
+          team1: components['Diffuser'].team1_efficiency * 100,
+          team2: components['Diffuser'].team2_efficiency * 100,
+          winner: components['Diffuser'].team1_efficiency > components['Diffuser'].team2_efficiency ? team1 : team2
+        },
+        floor: {
+          team1: components['Floor'].team1_efficiency * 100,
+          team2: components['Floor'].team2_efficiency * 100,
+          winner: components['Floor'].team1_efficiency > components['Floor'].team2_efficiency ? team1 : team2
+        }
+      });
+
     } catch (error) {
       console.error('Error comparing teams:', error);
-      // Fallback with realistic data
-      const componentMetrics = [
-        { label: 'Front Wing', valueA: 85, valueB: 78, team1, team2 },
-        { label: 'Rear Wing', valueA: 82, valueB: 86, team1, team2 },
-        { label: 'Floor', valueA: 88, valueB: 75, team1, team2 },
-        { label: 'Diffuser', valueA: 79, valueB: 83, team1, team2 },
-        { label: 'Top Speed', valueA: 348, valueB: 345, team1, team2, unit: 'km/h' },
-        { label: 'Corner Speed', valueA: 180, valueB: 182, team1, team2, unit: 'km/h' },
-      ];
-
-      const radarChartData = [
-        { metric: 'Top Speed', [team1]: 94, [team2]: 93 },
-        { metric: 'Corner Speed', [team1]: 82, [team2]: 83 },
-        { metric: 'Efficiency', [team1]: 90, [team2]: 86 },
-        { metric: 'Front Wing', [team1]: 85, [team2]: 78 },
-        { metric: 'Rear Wing', [team1]: 82, [team2]: 86 },
-        { metric: 'Floor', [team1]: 88, [team2]: 75 }
-      ];
-      setRadarData(radarChartData);
-
-      setResults({
-        metrics: componentMetrics,
-        winner: team1,
-        insights: [
-          {
-            type: 'warning',
-            message: 'Using fallback data - ML backend connection issue',
-            icon: 'alert'
-          },
-          {
-            type: 'info',
-            message: `${team1} shows slightly better overall performance at ${selectedTrack}`,
-            icon: 'info'
-          },
-          {
-            type: 'success',
-            message: 'Both teams are highly competitive on this circuit',
-            icon: 'award'
-          }
-        ],
-      });
     } finally {
       setComparing(false);
     }
@@ -361,747 +179,1548 @@ const Compare = () => {
     }
 
     setComparing(true);
+    setResults(null);
+    setComponentAnalysis(null);
 
     try {
-      // Analyze Design A using Computer Vision
-      const analysisA = await mlService.analyzeImage(imageA, categoryA);
+      console.log(`🔬 Analyzing ${selectedComponent} for both designs...`);
       
-      // Analyze Design B using Computer Vision
-      const analysisB = await mlService.analyzeImage(imageB, categoryB);
+      // Analyze both images using computer vision - ONLY the selected component
+      const analysisA = await mlService.analyzeImage(imageA, selectedComponent);
+      const analysisB = await mlService.analyzeImage(imageB, selectedComponent);
       
-      // Extract aerodynamic metrics from CV analysis
-      const aeroMetricsA = analysisA.aerodynamic_metrics || {};
-      const aeroMetricsB = analysisB.aerodynamic_metrics || {};
+      console.log('Raw Analysis A:', analysisA);
+      console.log('Raw Analysis B:', analysisB);
       
-      // Build comparison metrics from REAL CV analysis
-      const componentMetrics = [
-        { 
-          label: 'Downforce Efficiency', 
-          valueA: (aeroMetricsA.estimated_downforce_efficiency || 0.85) * 100, 
-          valueB: (aeroMetricsB.estimated_downforce_efficiency || 0.78) * 100,
-          team1: 'Design A',
-          team2: 'Design B'
-        },
-        { 
-          label: 'Drag Score (Higher = Lower Drag)', 
-          valueA: 100 - ((aeroMetricsA.estimated_cd || 0.70) * 100),
-          valueB: 100 - ((aeroMetricsB.estimated_cd || 0.72) * 100),
-          team1: 'Design A',
-          team2: 'Design B'
-        },
-        { 
-          label: 'Aerodynamic Balance', 
-          valueA: Math.abs(50 - (aeroMetricsA.balance_percentage || 40)) > 10 ? 70 : 88,
-          valueB: Math.abs(50 - (aeroMetricsB.balance_percentage || 42)) > 10 ? 68 : 85,
-          team1: 'Design A',
-          team2: 'Design B'
-        },
-        { 
-          label: 'Component Quality', 
-          valueA: (analysisA.overall_confidence || 0.82) * 100,
-          valueB: (analysisB.overall_confidence || 0.80) * 100,
-          team1: 'Design A',
-          team2: 'Design B'
-        }
-      ];
+      // Extract component analysis from CV
+      const compA = analysisA.component_analysis || {};
+      const compB = analysisB.component_analysis || {};
+      
+      console.log('Component Analysis A:', compA);
+      console.log('Component Analysis B:', compB);
+      
+      // Map component name to backend key
+      const componentKeyMap = {
+        'Front Wing': 'front_wing',
+        'Rear Wing': 'rear_wing',
+        'Sidepods': 'sidepods',
+        'Diffuser': 'diffuser',
+        'Floor': 'floor'
+      };
+      
+      const componentKey = componentKeyMap[selectedComponent];
+      const compAData = compA[componentKey];
+      const compBData = compB[componentKey];
+      
+      console.log(`Component Key: ${componentKey}`);
+      console.log('Extracted Data A:', compAData);
+      console.log('Extracted Data B:', compBData);
+      
+      if (!compAData || !compBData) {
+        throw new Error(`No data found for ${selectedComponent}. Check backend response.`);
+      }
+      
+      // Build component analysis object
+      const analysisObject = {};
+      
+      // Map selected component to the right key and extract REAL data
+      if (selectedComponent === 'Front Wing') {
+        analysisObject.frontWing = {
+          team1: compAData.efficiency,
+          team2: compBData.efficiency,
+          winner: compAData.efficiency > compBData.efficiency ? 'Design A' : 'Design B',
+          details1: compAData.details,
+          details2: compBData.details,
+          // Enhanced metrics - ALL from real CV analysis
+          wingAngle1: compAData.wing_angle,
+          wingAngle2: compBData.wing_angle,
+          endplateQuality1: compAData.endplate_quality,
+          endplateQuality2: compBData.endplate_quality,
+          y250Potential1: compAData.y250_vortex_potential,
+          y250Potential2: compBData.y250_vortex_potential,
+          downforceCd1: compAData.downforce_coefficient,
+          downforceCd2: compBData.downforce_coefficient,
+          elementCount1: compAData.element_count,
+          elementCount2: compBData.element_count,
+          recommendation1: compAData.recommendation,
+          recommendation2: compBData.recommendation
+        };
+      } else if (selectedComponent === 'Rear Wing') {
+        analysisObject.rearWing = {
+          team1: compAData.efficiency,
+          team2: compBData.efficiency,
+          winner: compAData.efficiency > compBData.efficiency ? 'Design A' : 'Design B',
+          details1: compAData.details,
+          details2: compBData.details,
+          drsPotential1: compAData.drs_potential,
+          drsPotential2: compBData.drs_potential,
+          dragCd1: compAData.drag_coefficient,
+          dragCd2: compBData.drag_coefficient
+        };
+      } else if (selectedComponent === 'Sidepods') {
+        analysisObject.sidepods = {
+          team1: compAData.efficiency,
+          team2: compBData.efficiency,
+          winner: compAData.efficiency > compBData.efficiency ? 'Design A' : 'Design B',
+          details1: compAData.details,
+          details2: compBData.details,
+          designType1: compAData.design_type,
+          designType2: compBData.design_type,
+          coolingCapacity1: compAData.cooling_capacity,
+          coolingCapacity2: compBData.cooling_capacity,
+          undercutAgg1: compAData.undercut_aggressiveness,
+          undercutAgg2: compBData.undercut_aggressiveness
+        };
+      } else if (selectedComponent === 'Diffuser') {
+        analysisObject.diffuser = {
+          team1: compAData.efficiency,
+          team2: compBData.efficiency,
+          winner: compAData.efficiency > compBData.efficiency ? 'Design A' : 'Design B',
+          details1: compAData.details,
+          details2: compBData.details,
+          expansionAngle1: compAData.expansion_angle,
+          expansionAngle2: compBData.expansion_angle,
+          strakeCount1: compAData.strake_count,
+          strakeCount2: compBData.strake_count,
+          downforceContribution1: compAData.downforce_contribution,
+          downforceContribution2: compBData.downforce_contribution
+        };
+      } else if (selectedComponent === 'Floor') {
+        analysisObject.floor = {
+          team1: compAData.efficiency,
+          team2: compBData.efficiency,
+          winner: compAData.efficiency > compBData.efficiency ? 'Design A' : 'Design B',
+          details1: compAData.details,
+          details2: compBData.details,
+          fenceCount1: compAData.fence_count,
+          fenceCount2: compBData.fence_count,
+          edgeWingComplexity1: compAData.edge_wing_complexity,
+          edgeWingComplexity2: compBData.edge_wing_complexity,
+          groundEffect1: compAData.ground_effect_potential,
+          groundEffect2: compBData.ground_effect_potential
+        };
+      }
+      
+      console.log('Final Analysis Object:', analysisObject);
+      
+      setComponentAnalysis(analysisObject);
 
-      // Add component-specific comparisons
-      if (analysisA.components && analysisB.components) {
-        const componentNames = [...new Set([
-          ...Object.keys(analysisA.components),
-          ...Object.keys(analysisB.components)
-        ])];
-        
-        componentNames.slice(0, 4).forEach(compName => {
-          const compA = analysisA.components[compName];
-          const compB = analysisB.components[compName];
-          if (compA && compB) {
-            componentMetrics.push({
-              label: compName.replace('_', ' ').toUpperCase(),
-              valueA: (compA.confidence || 0.8) * 100,
-              valueB: (compB.confidence || 0.8) * 100,
-              team1: 'Design A',
-              team2: 'Design B'
-            });
-          }
-        });
-      }
-
-      // Generate head-to-head data
-      const performanceComparisonData = [
-        {
-          name: 'Downforce Efficiency',
-          team1Value: (aeroMetricsA.estimated_downforce_efficiency || 0.85) * 100,
-          team2Value: (aeroMetricsB.estimated_downforce_efficiency || 0.78) * 100,
-          winner: (aeroMetricsA.estimated_downforce_efficiency || 0.85) > (aeroMetricsB.estimated_downforce_efficiency || 0.78) ? 'Design A' : 'Design B',
-          unit: '%'
-        },
-        {
-          name: 'Low Drag Score',
-          team1Value: 100 - ((aeroMetricsA.estimated_cd || 0.70) * 100),
-          team2Value: 100 - ((aeroMetricsB.estimated_cd || 0.72) * 100),
-          winner: (aeroMetricsA.estimated_cd || 0.70) < (aeroMetricsB.estimated_cd || 0.72) ? 'Design A' : 'Design B',
-          unit: ''
-        },
-        {
-          name: 'Balance Quality',
-          team1Value: Math.abs(50 - (aeroMetricsA.balance_percentage || 40)) > 10 ? 70 : 88,
-          team2Value: Math.abs(50 - (aeroMetricsB.balance_percentage || 42)) > 10 ? 68 : 85,
-          winner: Math.abs(50 - (aeroMetricsA.balance_percentage || 40)) < Math.abs(50 - (aeroMetricsB.balance_percentage || 42)) ? 'Design A' : 'Design B',
-          unit: '%'
-        },
-        {
-          name: 'Overall Quality',
-          team1Value: (analysisA.overall_confidence || 0.82) * 100,
-          team2Value: (analysisB.overall_confidence || 0.80) * 100,
-          winner: (analysisA.overall_confidence || 0.82) > (analysisB.overall_confidence || 0.80) ? 'Design A' : 'Design B',
-          unit: '%'
-        }
-      ];
-      setRadarData(performanceComparisonData);
-
-      // Generate REAL ML-analyzed insights from CV
-      const insights = [];
-      
-      // Downforce comparison
-      const dfEffA = (aeroMetricsA.estimated_downforce_efficiency || 0.85) * 100;
-      const dfEffB = (aeroMetricsB.estimated_downforce_efficiency || 0.78) * 100;
-      const dfDelta = dfEffA - dfEffB;
-      
-      if (Math.abs(dfDelta) > 2) {
-        insights.push({
-          type: dfDelta > 0 ? 'success' : 'info',
-          message: `🔽 ${dfDelta > 0 ? 'Design A' : 'Design B'} generates ${Math.abs(dfDelta).toFixed(1)}% better downforce efficiency`,
-          icon: 'target'
-        });
-      }
-      
-      // Drag comparison
-      const cdA = aeroMetricsA.estimated_cd || 0.70;
-      const cdB = aeroMetricsB.estimated_cd || 0.72;
-      
-      if (Math.abs(cdA - cdB) > 0.01) {
-        const lowerDragDesign = cdA < cdB ? 'Design A' : 'Design B';
-        insights.push({
-          type: 'success',
-          message: `💨 ${lowerDragDesign} has ${Math.abs((cdA - cdB) * 100).toFixed(1)}% lower drag coefficient (Cd: ${cdA.toFixed(3)} vs ${cdB.toFixed(3)})`,
-          icon: 'zap'
-        });
-      }
-      
-      // Balance comparison
-      const balanceA = aeroMetricsA.balance_percentage || 40;
-      const balanceB = aeroMetricsB.balance_percentage || 42;
-      const balanceQualityA = Math.abs(50 - balanceA);
-      const balanceQualityB = Math.abs(50 - balanceB);
-      
-      if (Math.abs(balanceQualityA - balanceQualityB) > 2) {
-        const betterBalanceDesign = balanceQualityA < balanceQualityB ? 'Design A' : 'Design B';
-        insights.push({
-          type: 'success',
-          message: `⚖️ ${betterBalanceDesign} shows superior aerodynamic balance (${balanceQualityA < balanceQualityB ? balanceA.toFixed(1) : balanceB.toFixed(1)}% front vs ideal 50%)`,
-          icon: 'target'
-        });
-      }
-      
-      // Component-specific insights
-      if (analysisA.detected_components && analysisB.detected_components) {
-        const componentsA = analysisA.detected_components.length;
-        const componentsB = analysisB.detected_components.length;
-        
-        insights.push({
-          type: 'info',
-          message: `🔍 Computer Vision detected ${componentsA} components in Design A and ${componentsB} in Design B`,
-          icon: 'info'
-        });
-      }
-      
-      // Overall winner
-      const scoreA = dfEffA + (100 - cdA * 100) + (analysisA.overall_confidence || 0.82) * 100;
-      const scoreB = dfEffB + (100 - cdB * 100) + (analysisB.overall_confidence || 0.80) * 100;
-      const winner = scoreA > scoreB ? 'Design A' : 'Design B';
-      const scoreDelta = Math.abs(scoreA - scoreB);
-      
-      insights.push({
-        type: 'success',
-        message: `🏆 ${winner} is the superior design with ${scoreDelta.toFixed(1)} points advantage (${scoreA.toFixed(1)} vs ${scoreB.toFixed(1)})`,
-        icon: 'award'
-      });
-      
-      // Add technical details
-      insights.push({
-        type: 'info',
-        message: `📊 Analysis based on ${categoryA} for Design A and ${categoryB} for Design B`,
-        icon: 'info'
-      });
-      
-      // Add detected components
-      if (analysisA.detected_components || analysisB.detected_components) {
-        const compA = analysisA.detected_components || [];
-        const compB = analysisB.detected_components || [];
-        insights.push({
-          type: 'info',
-          message: `🔧 Design A: ${compA.join(', ') || 'N/A'} | Design B: ${compB.join(', ') || 'N/A'}`,
-          icon: 'info'
-        });
-      }
+      // Overall comparison results based on the selected component
+      const avgA = compAData.efficiency;
+      const avgB = compBData.efficiency;
 
       setResults({
-        metrics: componentMetrics,
-        winner: winner,
-        insights: insights,
-        lapTimeDelta: (scoreB - scoreA) / 100, // Rough estimate
-        team1LapTime: `Score: ${scoreA.toFixed(1)}/300`,
-        team2LapTime: `Score: ${scoreB.toFixed(1)}/300`
+        team1: 'Design A',
+        team2: 'Design B',
+        track: `${selectedComponent} Analysis`,
+        overall: {
+          team1: avgA,
+          team2: avgB,
+          winner: avgA > avgB ? 'Design A' : 'Design B'
+        },
+        insights: [
+          {
+            type: avgA > avgB ? 'success' : 'info',
+            message: `${avgA > avgB ? 'Design A' : 'Design B'} has ${Math.abs(avgA - avgB).toFixed(1)}% better ${selectedComponent.toLowerCase()} efficiency`
+          },
+          {
+            type: 'info',
+            message: `Deep computer vision analysis completed for ${selectedComponent}`
+          },
+          {
+            type: 'info',
+            message: `Analysis quality: ${analysisA.analysis_quality || 'HIGH'}`
+          }
+        ]
       });
-      
-      setComparing(false);
+
     } catch (error) {
-      console.error('Error analyzing images:', error);
-      alert('Error analyzing images with Computer Vision. Please check backend connection.');
+      console.error('Error comparing images:', error);
+    } finally {
       setComparing(false);
     }
   };
 
-  const handleCompare = () => {
-    if (comparisonMode === 'teams') {
-      handleCompareTeams();
-    } else {
-      handleCompareImages();
+  const generateInsights = (comparison, team1, team2) => {
+    const insights = [];
+    
+    // Lap time winner
+    if (Math.abs(comparison.lap_time_delta) > 0.001) {
+      const winner = comparison.lap_time_delta < 0 ? team1 : team2;
+      insights.push({
+            type: 'success',
+        message: `🏆 ${winner} is ${Math.abs(comparison.lap_time_delta).toFixed(2)}s faster per lap`
+      });
     }
-  };
-
-  const getInsightIcon = (type) => {
-    switch(type) {
-      case 'award': return <Award size={18} />;
-      case 'zap': return <Zap size={18} />;
-      case 'target': return <Target size={18} />;
-      case 'alert': return <AlertCircle size={18} />;
-      default: return <TrendingUp size={18} />;
+    
+    // Speed analysis
+    if (comparison.performance_comparison?.top_speed) {
+      const speedDelta = comparison.performance_comparison.top_speed.delta;
+      if (Math.abs(speedDelta) > 1) {
+        const speedWinner = speedDelta > 0 ? team1 : team2;
+        insights.push({
+          type: 'info',
+          message: `⚡ ${speedWinner} has ${Math.abs(speedDelta).toFixed(1)} km/h higher top speed`
+        });
+      }
     }
-  };
-
-  const getInsightColor = (type) => {
-    switch(type) {
-      case 'success': return '#00ff88';
-      case 'warning': return '#ff8700';
-      case 'info': return '#00d2ff';
-      default: return '#00d2ff';
+    
+    // Corner performance
+    if (comparison.performance_comparison?.corner_speed) {
+      const cornerDelta = comparison.performance_comparison.corner_speed.delta;
+      if (Math.abs(cornerDelta) > 1) {
+        const cornerWinner = cornerDelta > 0 ? team1 : team2;
+        insights.push({
+          type: 'info',
+          message: `🎯 ${cornerWinner} has ${Math.abs(cornerDelta).toFixed(1)} km/h better avg corner speed`
+        });
+      }
     }
+    
+    return insights;
   };
 
   return (
     <div className="compare-page">
-      {/* Background Effects */}
+      {/* Enhanced Animated Background Elements */}
+      <div className="grid-overlay"></div>
+      <div className="gradient-orb orb-purple"></div>
+      <div className="gradient-orb orb-cyan"></div>
+      <div className="gradient-orb orb-red"></div>
+      <div className="diagonal-lines"></div>
+      
+      {/* Dynamic Speed Stripes */}
       <div className="fx-bg">
         <div className="fx-stripe s1"></div>
         <div className="fx-stripe s2"></div>
+        <div className="fx-stripe s3"></div>
       </div>
 
+      <div style={{ maxWidth: '1600px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+
       {/* Header */}
-      <div className="compare-header animate-in">
-        <h1>Aerodynamic Comparison</h1>
-        <p className="sub">ML-Powered Performance Analysis</p>
-        <span className="title-underline"></span>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <h1 style={{
+            fontSize: '3.5rem',
+            fontWeight: '900',
+            background: 'linear-gradient(135deg, #ef4444 0%, #f97316 50%, #fbbf24 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '1rem',
+            letterSpacing: '2px'
+          }}>
+            TEAM COMPARISON
+          </h1>
+          <p style={{ color: '#94a3b8', fontSize: '1.25rem', margin: 0 }}>
+            Deep ML Analysis • Computer Vision • Real-time Performance Data
+          </p>
       </div>
 
       {/* Mode Selector */}
-      <div className="mode-selector animate-in" style={{ animationDelay: '0.05s' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          gap: '1rem', 
+          marginBottom: '3rem' 
+        }}>
         <button 
-          className={`mode-btn ${comparisonMode === 'teams' ? 'active' : ''}`}
           onClick={() => setComparisonMode('teams')}
+            style={{
+              padding: '1rem 2rem',
+              borderRadius: '1rem',
+              border: 'none',
+              background: comparisonMode === 'teams' 
+                ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                : 'rgba(51, 65, 85, 0.6)',
+              color: '#fff',
+              fontSize: '1.1rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: comparisonMode === 'teams' 
+                ? '0 10px 30px rgba(239, 68, 68, 0.5)'
+                : 'none'
+            }}
         >
-          <Users size={20} />
+            <Users size={20} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
           Compare Teams
         </button>
         <button 
-          className={`mode-btn ${comparisonMode === 'images' ? 'active' : ''}`}
           onClick={() => setComparisonMode('images')}
+            style={{
+              padding: '1rem 2rem',
+              borderRadius: '1rem',
+              border: 'none',
+              background: comparisonMode === 'images' 
+                ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                : 'rgba(51, 65, 85, 0.6)',
+              color: '#fff',
+              fontSize: '1.1rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: comparisonMode === 'images' 
+                ? '0 10px 30px rgba(239, 68, 68, 0.5)'
+                : 'none'
+            }}
         >
-          <Upload size={20} />
+            <Upload size={20} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
           Compare Designs
         </button>
       </div>
 
       {/* Team Comparison Mode */}
       {comparisonMode === 'teams' && (
-        <>
-          <div className="compare-form animate-in" style={{ animationDelay: '0.1s' }}>
-            {/* Team 1 */}
             <div>
-              <div className="field">
-                <label>
-                  <Zap size={16} style={{ display: 'inline', marginRight: '6px' }} />
-                  Team 1
+            {/* Team Selection */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr auto 1fr', 
+              gap: '2rem', 
+              marginBottom: '2rem',
+              alignItems: 'center'
+            }}>
+              {/* Team 1 */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)',
+                padding: '2rem',
+                borderRadius: '1.5rem',
+                border: '2px solid rgba(239, 68, 68, 0.4)',
+                backdropFilter: 'blur(20px)'
+              }}>
+                <label style={{ color: '#ef4444', fontWeight: '700', fontSize: '1.1rem', display: 'block', marginBottom: '1rem' }}>
+                  TEAM 1
                 </label>
-                <select value={team1} onChange={(e) => setTeam1(e.target.value)}>
+                <select
+                  className="select-control"
+                  value={team1}
+                  onChange={(e) => setTeam1(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    borderRadius: '0.75rem',
+                    border: '2px solid rgba(239, 68, 68, 0.3)',
+                    background: 'rgba(15, 23, 42, 0.8)',
+                    color: '#fff',
+                    fontSize: '1.1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
                   {TEAMS.map(team => (
                     <option key={team} value={team}>{team}</option>
                   ))}
                 </select>
               </div>
+
+              {/* VS */}
+              <div style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2rem',
+                fontWeight: '900',
+                color: '#fff',
+                boxShadow: '0 10px 30px rgba(239, 68, 68, 0.5)'
+              }}>
+                VS
             </div>
 
             {/* Team 2 */}
-            <div>
-              <div className="field">
-                <label>
-                  <TrendingUp size={16} style={{ display: 'inline', marginRight: '6px' }} />
-                  Team 2
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)',
+                padding: '2rem',
+                borderRadius: '1.5rem',
+                border: '2px solid rgba(59, 130, 246, 0.4)',
+                backdropFilter: 'blur(20px)'
+              }}>
+                <label style={{ color: '#3b82f6', fontWeight: '700', fontSize: '1.1rem', display: 'block', marginBottom: '1rem' }}>
+                  TEAM 2
                 </label>
-                <select value={team2} onChange={(e) => setTeam2(e.target.value)}>
+                <select
+                  className="select-control"
+                  value={team2}
+                  onChange={(e) => setTeam2(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    borderRadius: '0.75rem',
+                    border: '2px solid rgba(59, 130, 246, 0.3)',
+                    background: 'rgba(15, 23, 42, 0.8)',
+                    color: '#fff',
+                    fontSize: '1.1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
                   {TEAMS.map(team => (
                     <option key={team} value={team}>{team}</option>
                   ))}
                 </select>
-              </div>
             </div>
           </div>
 
           {/* Track Selection */}
-          <div className="track-selection animate-in" style={{ animationDelay: '0.15s' }}>
-            <div className="field">
-              <label>Select Circuit</label>
-              <select value={selectedTrack} onChange={(e) => setSelectedTrack(e.target.value)}>
+            <div style={{
+              background: 'rgba(30, 41, 59, 0.6)',
+              padding: '1.5rem',
+              borderRadius: '1rem',
+              border: '1px solid rgba(71, 85, 105, 0.3)',
+              marginBottom: '2rem'
+            }}>
+              <label style={{ color: '#94a3b8', fontWeight: '600', fontSize: '0.9rem', display: 'block', marginBottom: '0.75rem' }}>
+                CIRCUIT
+              </label>
+              <select
+                className="select-control"
+                value={selectedTrack}
+                onChange={(e) => setSelectedTrack(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid rgba(71, 85, 105, 0.5)',
+                  background: 'rgba(15, 23, 42, 0.8)',
+                  color: '#e2e8f0',
+                  fontSize: '1rem',
+                  cursor: 'pointer'
+                }}
+              >
                 {tracks.map(track => (
-                  <option key={track.name} value={track.name}>
-                    {track.name} ({track.downforce_level})
-                  </option>
+                  <option key={track.name} value={track.name}>{track.name}</option>
                 ))}
               </select>
             </div>
+
+            {/* Compare Button */}
+            <button
+              onClick={handleCompareTeams}
+              disabled={comparing}
+              style={{
+                width: '100%',
+                padding: '1.5rem',
+                borderRadius: '1rem',
+                border: 'none',
+                background: comparing 
+                  ? 'rgba(71, 85, 105, 0.5)' 
+                  : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: '#fff',
+                fontSize: '1.25rem',
+                fontWeight: '800',
+                cursor: comparing ? 'not-allowed' : 'pointer',
+                marginBottom: '3rem',
+                boxShadow: comparing ? 'none' : '0 10px 30px rgba(239, 68, 68, 0.5)',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {comparing ? 'ANALYZING...' : 'COMPARE TEAMS'}
+            </button>
           </div>
-        </>
       )}
 
       {/* Image Comparison Mode */}
       {comparisonMode === 'images' && (
-        <div className="compare-form animate-in" style={{ animationDelay: '0.1s' }}>
-          {/* Left Side - Image Upload A */}
           <div>
-            <div className="field">
-              <label>
-                <Zap size={16} style={{ display: 'inline', marginRight: '6px' }} />
-                Design A - Name
-              </label>
-              <input
-                type="text"
-                placeholder="Enter design name..."
-                value={team1}
-                onChange={(e) => setTeam1(e.target.value)}
-              />
+            {/* Component Selector */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)',
+              padding: '2rem',
+              borderRadius: '1.5rem',
+              border: '2px solid rgba(139, 92, 246, 0.4)',
+              backdropFilter: 'blur(20px)',
+              marginBottom: '2rem',
+              boxShadow: '0 10px 30px rgba(139, 92, 246, 0.3)'
+            }}>
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ color: '#8b5cf6', fontSize: '1.75rem', fontWeight: '800', margin: '0 0 0.5rem 0' }}>
+                  SELECT COMPONENT TO ANALYZE
+                </h3>
+                <p style={{ color: '#94a3b8', fontSize: '1rem', margin: 0 }}>
+                  Choose which specific component you want to analyze with computer vision
+                </p>
             </div>
 
-          <div className="field" style={{ marginTop: '16px' }}>
-            <label>Upload Design A</label>
-            <div
-              className={`uploader ${!imageA ? 'pulse' : ''}`}
-              onClick={() => fileInputA.current?.click()}
-            >
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
+                gap: '1rem' 
+              }}>
+                {AVAILABLE_COMPONENTS.map((comp) => (
+                  <button
+                    key={comp.name}
+                    onClick={() => setSelectedComponent(comp.name)}
+                    style={{
+                      padding: '1.5rem',
+                      borderRadius: '1rem',
+                      border: selectedComponent === comp.name 
+                        ? '3px solid #8b5cf6' 
+                        : '2px solid rgba(71, 85, 105, 0.4)',
+                      background: selectedComponent === comp.name
+                        ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%)'
+                        : 'rgba(51, 65, 85, 0.6)',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      textAlign: 'center',
+                      boxShadow: selectedComponent === comp.name 
+                        ? '0 10px 30px rgba(139, 92, 246, 0.4)' 
+                        : 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedComponent !== comp.name) {
+                        e.currentTarget.style.background = 'rgba(71, 85, 105, 0.7)';
+                        e.currentTarget.style.transform = 'translateY(-5px)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedComponent !== comp.name) {
+                        e.currentTarget.style.background = 'rgba(51, 65, 85, 0.6)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }
+                    }}
+                  >
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{comp.icon}</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.5rem' }}>{comp.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: '1.3' }}>{comp.description}</div>
+                    {selectedComponent === comp.name && (
+                      <div style={{
+                        marginTop: '0.75rem',
+                        padding: '0.5rem',
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                        borderRadius: '9999px',
+                        fontSize: '0.75rem',
+                        fontWeight: '800',
+                        letterSpacing: '0.5px'
+                      }}>
+                        ✓ SELECTED
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Image Upload Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+              {/* Design A */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)',
+                padding: '2rem',
+                borderRadius: '1.5rem',
+                border: '2px solid rgba(239, 68, 68, 0.4)',
+                backdropFilter: 'blur(20px)'
+              }}>
+                <h3 style={{ color: '#ef4444', marginBottom: '1rem', fontSize: '1.5rem', fontWeight: '800' }}>
+                  DESIGN A
+                </h3>
               <input
-                ref={fileInputA}
                 type="file"
-                accept="image/*"
+                  ref={fileInputA}
                 onChange={(e) => handleImageUpload(e, 'A')}
-              />
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                />
+                <div
+                  onClick={() => fileInputA.current.click()}
+                  style={{
+                    border: '2px dashed rgba(239, 68, 68, 0.5)',
+                    borderRadius: '1rem',
+                    padding: '2rem',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: 'rgba(15, 23, 42, 0.5)',
+                    minHeight: '250px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#ef4444';
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+                    e.currentTarget.style.background = 'rgba(15, 23, 42, 0.5)';
+                  }}
+                >
               {imageA ? (
-                <img src={imageA} alt="Design A" />
+                    <img src={imageA} alt="Design A" style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '0.5rem' }} />
               ) : (
-                <>
-                  <div className="upload-icon">
-                    <Upload size={28} color="#fff" />
+                    <div>
+                      <Upload size={48} color="#ef4444" style={{ marginBottom: '1rem' }} />
+                      <p style={{ color: '#94a3b8', margin: 0 }}>Click to upload</p>
                   </div>
-                  <div className="drop-hint">
-                    Drop your image here
-                    <small>or click to browse</small>
-                  </div>
-                </>
               )}
             </div>
           </div>
 
-          <div className="benchmarks">
-            <div className="field">
-              <label>Category</label>
-              <select value={categoryA} onChange={(e) => setCategoryA(e.target.value)}>
-                <option>Front Wing</option>
-                <option>Rear Wing</option>
-                <option>Diffuser</option>
-                <option>Sidepods</option>
-                <option>Floor</option>
-              </select>
-            </div>
-            <div className="field">
-              <label>Benchmark (Optional)</label>
+              {/* Design B */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)',
+                padding: '2rem',
+                borderRadius: '1.5rem',
+                border: '2px solid rgba(59, 130, 246, 0.4)',
+                backdropFilter: 'blur(20px)'
+              }}>
+                <h3 style={{ color: '#3b82f6', marginBottom: '1rem', fontSize: '1.5rem', fontWeight: '800' }}>
+                  DESIGN B
+                </h3>
               <input
-                type="text"
-                placeholder="e.g., RB19"
-                value={benchmarkA}
-                onChange={(e) => setBenchmarkA(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side - Image Upload B */}
-        <div>
-            <div className="field">
-              <label>
-                <TrendingUp size={16} style={{ display: 'inline', marginRight: '6px' }} />
-                Design B - Name
-              </label>
-              <input
-                type="text"
-                placeholder="Enter design name..."
-                value={team2}
-                onChange={(e) => setTeam2(e.target.value)}
-              />
-            </div>
-
-          <div className="field" style={{ marginTop: '16px' }}>
-            <label>Upload Design B</label>
-            <div
-              className={`uploader ${!imageB ? 'pulse' : ''}`}
-              onClick={() => fileInputB.current?.click()}
-            >
-              <input
-                ref={fileInputB}
                 type="file"
-                accept="image/*"
+                  ref={fileInputB}
                 onChange={(e) => handleImageUpload(e, 'B')}
-              />
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                />
+                <div
+                  onClick={() => fileInputB.current.click()}
+                  style={{
+                    border: '2px dashed rgba(59, 130, 246, 0.5)',
+                    borderRadius: '1rem',
+                    padding: '2rem',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: 'rgba(15, 23, 42, 0.5)',
+                    minHeight: '250px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6';
+                    e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                    e.currentTarget.style.background = 'rgba(15, 23, 42, 0.5)';
+                  }}
+                >
               {imageB ? (
-                <img src={imageB} alt="Design B" />
+                    <img src={imageB} alt="Design B" style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '0.5rem' }} />
               ) : (
-                <>
-                  <div className="upload-icon">
-                    <Upload size={28} color="#fff" />
+                    <div>
+                      <Upload size={48} color="#3b82f6" style={{ marginBottom: '1rem' }} />
+                      <p style={{ color: '#94a3b8', margin: 0 }}>Click to upload</p>
                   </div>
-                  <div className="drop-hint">
-                    Drop your image here
-                    <small>or click to browse</small>
-                  </div>
-                </>
               )}
             </div>
           </div>
+            </div>
 
-          <div className="benchmarks">
-            <div className="field">
-              <label>Category</label>
-              <select value={categoryB} onChange={(e) => setCategoryB(e.target.value)}>
-                <option>Front Wing</option>
-                <option>Rear Wing</option>
-                <option>Diffuser</option>
-                <option>Sidepods</option>
-                <option>Floor</option>
-              </select>
-            </div>
-            <div className="field">
-              <label>Benchmark (Optional)</label>
-              <input
-                type="text"
-                placeholder="e.g., W14"
-                value={benchmarkB}
-                onChange={(e) => setBenchmarkB(e.target.value)}
-              />
-            </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Compare Button */}
+            {/* Compare Images Button */}
       <button
-        className="compare-btn animate-in"
-        style={{ animationDelay: '0.2s' }}
-        onClick={handleCompare}
-        disabled={comparing || (comparisonMode === 'images' && (!imageA || !imageB))}
-      >
-        {comparing ? 'Analyzing...' : comparisonMode === 'teams' ? 'Compare Teams' : 'Compare Designs'}
+              onClick={handleCompareImages}
+              disabled={comparing || !imageA || !imageB}
+              style={{
+                width: '100%',
+                padding: '1.5rem',
+                borderRadius: '1rem',
+                border: 'none',
+                background: (comparing || !imageA || !imageB)
+                  ? 'rgba(71, 85, 105, 0.5)' 
+                  : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                color: '#fff',
+                fontSize: '1.25rem',
+                fontWeight: '800',
+                cursor: (comparing || !imageA || !imageB) ? 'not-allowed' : 'pointer',
+                marginBottom: '3rem',
+                boxShadow: (comparing || !imageA || !imageB) ? 'none' : '0 10px 30px rgba(139, 92, 246, 0.5)',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {comparing ? `ANALYZING ${selectedComponent.toUpperCase()}...` : `ANALYZE ${selectedComponent.toUpperCase()}`}
       </button>
+          </div>
+        )}
 
       {/* Results Section */}
       {results && (
-        <>
-          <div className="glow-divider"></div>
+          <div style={{ marginTop: '3rem' }}>
 
-          {/* Head-to-Head Performance Comparison */}
-          {radarData.length > 0 && (
-            <div className="chart-card animate-in" style={{ animationDelay: '0.25s', marginBottom: '32px', padding: '24px' }}>
-              <h3 className="card-title">⚔️ Head-to-Head Performance</h3>
-              <div style={{ display: 'grid', gap: '16px', marginTop: '20px' }}>
-                {radarData.map((metric, idx) => {
-                  const max = Math.max(metric.team1Value, metric.team2Value);
-                  const team1Percent = (metric.team1Value / max) * 100;
-                  const team2Percent = (metric.team2Value / max) * 100;
-                  const isTeam1Winner = metric.winner === team1;
-                  
-                  return (
-                    <div key={idx} style={{
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      borderRadius: '12px',
-                      padding: '16px',
-                      border: '1px solid rgba(255, 255, 255, 0.1)'
-                    }}>
-                      <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff' }}>{metric.name}</span>
-                        <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)' }}>
-                          {metric.winner} leads
-                        </span>
-                      </div>
-                      
-                      {/* Team 1 Bar */}
-                      <div style={{ marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '12px', color: isTeam1Winner ? '#ff2a4d' : 'rgba(255, 255, 255, 0.7)' }}>
-                            {team1}
-                          </span>
-                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: isTeam1Winner ? '#ff2a4d' : '#fff' }}>
-                            {metric.team1Value.toFixed(metric.unit === 'km/h' ? 1 : 2)} {metric.unit}
-                          </span>
-                        </div>
-                        <div style={{ 
-                          height: '24px', 
-                          background: 'rgba(255, 255, 255, 0.1)', 
-                          borderRadius: '12px',
-                          overflow: 'hidden',
-                          position: 'relative'
-                        }}>
-                          <div style={{
-                            width: `${team1Percent}%`,
-                            height: '100%',
-                            background: isTeam1Winner 
-                              ? 'linear-gradient(90deg, #ff2a4d, #ff6b35)' 
-                              : 'rgba(255, 42, 77, 0.4)',
-                            borderRadius: '12px',
-                            transition: 'width 0.5s ease'
-                          }} />
-                        </div>
-                      </div>
-                      
-                      {/* Team 2 Bar */}
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '12px', color: !isTeam1Winner ? '#00d2ff' : 'rgba(255, 255, 255, 0.7)' }}>
-                            {team2}
-                          </span>
-                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: !isTeam1Winner ? '#00d2ff' : '#fff' }}>
-                            {metric.team2Value.toFixed(metric.unit === 'km/h' ? 1 : 2)} {metric.unit}
-                          </span>
-                        </div>
-                        <div style={{ 
-                          height: '24px', 
-                          background: 'rgba(255, 255, 255, 0.1)', 
-                          borderRadius: '12px',
-                          overflow: 'hidden',
-                          position: 'relative'
-                        }}>
-                          <div style={{
-                            width: `${team2Percent}%`,
-                            height: '100%',
-                            background: !isTeam1Winner 
-                              ? 'linear-gradient(90deg, #00d2ff, #00ff88)' 
-                              : 'rgba(0, 210, 255, 0.4)',
-                            borderRadius: '12px',
-                            transition: 'width 0.5s ease'
-                          }} />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+            {/* Winner Banner */}
+            {results.lapTime && (
+              <div style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                padding: '2rem',
+                borderRadius: '1.5rem',
+                marginBottom: '2rem',
+                textAlign: 'center',
+                boxShadow: '0 10px 30px rgba(16, 185, 129, 0.5)'
+              }}>
+                <Award size={48} color="#fff" style={{ marginBottom: '1rem' }} />
+                <h2 style={{ color: '#fff', fontSize: '2.5rem', fontWeight: '900', margin: '0 0 0.5rem 0' }}>
+                  {results.lapTime.winner} WINS!
+                </h2>
+                <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '1.25rem', margin: 0 }}>
+                  {Math.abs(results.lapTime.delta).toFixed(2)}s faster at {results.track}
+                </p>
               </div>
+            )}
+
+            {/* STUNNING VISUAL PERFORMANCE COMPARISON - FastF1 Based */}
+            {results.lapTime && (
+              <div style={{ marginBottom: '3rem' }}>
+                <div style={{ 
+                  textAlign: 'center',
+                  marginBottom: '3rem'
+                }}>
+                  <h3 style={{ 
+                    color: '#e2e8f0', 
+                    fontSize: '2.5rem', 
+                    fontWeight: '900', 
+                    marginBottom: '0.5rem'
+                  }}>
+                    🏎️ AERODYNAMIC PERFORMANCE COMPARISON
+                  </h3>
+                  <div style={{ 
+                    display: 'inline-block',
+                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%)',
+                    padding: '0.75rem 2rem',
+                    borderRadius: '2rem',
+                    border: '2px solid rgba(139, 92, 246, 0.4)',
+                    marginTop: '1rem'
+                  }}>
+                    <span style={{ color: '#a78bfa', fontSize: '0.9rem', fontWeight: '700' }}>
+                      📊 Data Source: {results.dataSource || 'FASTF1_2024'} • Ranks: {results.team1} #{results.team1Rank} vs {results.team2} #{results.team2Rank}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Radial Performance Overview */}
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                  gap: '1.5rem',
+                  marginBottom: '4rem'
+                }}>
+                  <RadialPerformance
+                    label="Top Speed"
+                    value={results.topSpeed.team1}
+                    max={360}
+                    color="#ef4444"
+                    icon="🚀"
+                    subtitle={`${results.team1}: ${results.topSpeed.team1.toFixed(1)} km/h`}
+                  />
+                  <RadialPerformance
+                    label="Corner Speed"
+                    value={results.cornerSpeed.team1}
+                    max={210}
+                    color="#f59e0b"
+                    icon="🏁"
+                    subtitle={`${results.team1}: ${results.cornerSpeed.team1.toFixed(1)} km/h`}
+                  />
+                  <RadialPerformance
+                    label="L/D Ratio"
+                    value={results.ldRatio.team1}
+                    max={6}
+                    color="#10b981"
+                    icon="⚡"
+                    subtitle={`${results.team1}: ${results.ldRatio.team1.toFixed(2)}`}
+                  />
+                  <RadialPerformance
+                    label="Downforce"
+                    value={results.downforce.team1}
+                    max={4.5}
+                    color="#8b5cf6"
+                    icon="⬇️"
+                    subtitle={`${results.team1}: ${results.downforce.team1.toFixed(2)}`}
+                  />
+                </div>
+
+                {/* Visual Comparison Bars */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)',
+                  padding: '3rem',
+                  borderRadius: '2rem',
+                  border: '2px solid rgba(139, 92, 246, 0.3)',
+                  backdropFilter: 'blur(20px)',
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+                }}>
+                  <h4 style={{ 
+                    color: '#a78bfa', 
+                    fontSize: '1.75rem', 
+                    fontWeight: '800', 
+                    marginBottom: '2.5rem',
+                    textAlign: 'center'
+                  }}>
+                    HEAD-TO-HEAD METRICS
+                  </h4>
+
+                  <VisualComparisonBar
+                    label="Top Speed"
+                    value1={results.topSpeed.team1}
+                    value2={results.topSpeed.team2}
+                    team1={results.team1}
+                    team2={results.team2}
+                    max={360}
+                    unit=" km/h"
+                    icon="🚀"
+                  />
+
+                  <VisualComparisonBar
+                    label="Corner Speed"
+                    value1={results.cornerSpeed.team1}
+                    value2={results.cornerSpeed.team2}
+                    team1={results.team1}
+                    team2={results.team2}
+                    max={210}
+                    unit=" km/h"
+                    icon="🏁"
+                  />
+
+                  <VisualComparisonBar
+                    label="L/D Ratio (Efficiency)"
+                    value1={results.ldRatio.team1}
+                    value2={results.ldRatio.team2}
+                    team1={results.team1}
+                    team2={results.team2}
+                    max={6}
+                    unit=""
+                    icon="⚡"
+                  />
+
+                  <VisualComparisonBar
+                    label="Downforce Coefficient"
+                    value1={results.downforce.team1}
+                    value2={results.downforce.team2}
+                    team1={results.team1}
+                    team2={results.team2}
+                    max={4.5}
+                    unit=""
+                    icon="⬇️"
+                  />
+
+                  <VisualComparisonBar
+                    label="Drag Coefficient"
+                    value1={results.drag.team1}
+                    value2={results.drag.team2}
+                    team1={results.team1}
+                    team2={results.team2}
+                    max={0.8}
+                    unit=""
+                    inverted={true}
+                    icon="💨"
+                  />
+
+                  <VisualComparisonBar
+                    label="0-100 km/h Acceleration"
+                    value1={results.acceleration.team1}
+                    value2={results.acceleration.team2}
+                    team1={results.team1}
+                    team2={results.team2}
+                    max={3.5}
+                    unit="s"
+                    inverted={true}
+                    icon="⏱️"
+                  />
+                </div>
             </div>
           )}
 
-          <div className="dashboard animate-in" style={{ animationDelay: '0.3s' }}>
-            {/* Bar Chart Comparison */}
-            <div className="chart-card">
-              <h3 className="card-title">Component Performance Comparison</h3>
-              <div className="bars">
-                {results.metrics.map((metric, idx) => {
-                  const total = metric.valueA + metric.valueB;
-                  const percentA = (metric.valueA / total) * 100;
-                  const percentB = (metric.valueB / total) * 100;
-                  const winner = metric.valueA > metric.valueB ? 'A' : 'B';
+            {/* Component Analysis */}
+            {componentAnalysis && (
+              <div style={{ marginBottom: '3rem' }}>
+                <h3 style={{ 
+                  color: '#e2e8f0', 
+                  fontSize: '2rem', 
+                  fontWeight: '800', 
+                  marginBottom: '1rem',
+                  textAlign: 'center'
+                }}>
+                  {selectedComponent.toUpperCase()} ANALYSIS
+                </h3>
+                <p style={{ 
+                  color: '#94a3b8', 
+                  textAlign: 'center', 
+                  marginBottom: '2rem',
+                  fontSize: '1.1rem'
+                }}>
+                  Deep Machine Learning & Computer Vision Analysis
+                </p>
+
+                {/* Front Wing */}
+                {componentAnalysis.frontWing && <ComponentCard
+                  component="Front Wing"
+                  value1={componentAnalysis.frontWing.team1}
+                  value2={componentAnalysis.frontWing.team2}
+                  team1={results.team1}
+                  team2={results.team2}
+                  winner={componentAnalysis.frontWing.winner}
+                  details1={componentAnalysis.frontWing.details1}
+                  details2={componentAnalysis.frontWing.details2}
+                  icon="🏁"
+                  color="#ef4444"
+                  enhancedData={componentAnalysis.frontWing}
+                />}
+
+                {/* Rear Wing */}
+                {componentAnalysis.rearWing && <ComponentCard
+                  component="Rear Wing"
+                  value1={componentAnalysis.rearWing.team1}
+                  value2={componentAnalysis.rearWing.team2}
+                  team1={results.team1}
+                  team2={results.team2}
+                  winner={componentAnalysis.rearWing.winner}
+                  details1={componentAnalysis.rearWing.details1}
+                  details2={componentAnalysis.rearWing.details2}
+                  icon="✈️"
+                  color="#f97316"
+                  enhancedData={componentAnalysis.rearWing}
+                />}
+
+                {/* Sidepods */}
+                {componentAnalysis.sidepods && <ComponentCard
+                  component="Sidepods"
+                  value1={componentAnalysis.sidepods.team1}
+                  value2={componentAnalysis.sidepods.team2}
+                  team1={results.team1}
+                  team2={results.team2}
+                  winner={componentAnalysis.sidepods.winner}
+                  details1={componentAnalysis.sidepods.details1}
+                  details2={componentAnalysis.sidepods.details2}
+                  icon="💨"
+                  color="#fbbf24"
+                  enhancedData={componentAnalysis.sidepods}
+                />}
+
+                {/* Diffuser */}
+                {componentAnalysis.diffuser && <ComponentCard
+                  component="Diffuser"
+                  value1={componentAnalysis.diffuser.team1}
+                  value2={componentAnalysis.diffuser.team2}
+                  team1={results.team1}
+                  team2={results.team2}
+                  winner={componentAnalysis.diffuser.winner}
+                  details1={componentAnalysis.diffuser.details1}
+                  details2={componentAnalysis.diffuser.details2}
+                  icon="🌊"
+                  color="#3b82f6"
+                  enhancedData={componentAnalysis.diffuser}
+                />}
+
+                {/* Floor */}
+                {componentAnalysis.floor && <ComponentCard
+                  component="Floor"
+                  value1={componentAnalysis.floor.team1}
+                  value2={componentAnalysis.floor.team2}
+                  team1={results.team1}
+                  team2={results.team2}
+                  winner={componentAnalysis.floor.winner}
+                  details1={componentAnalysis.floor.details1}
+                  details2={componentAnalysis.floor.details2}
+                  icon="⬇️"
+                  color="#8b5cf6"
+                  enhancedData={componentAnalysis.floor}
+                />}
+                      </div>
+            )}
+
+            {/* ML Insights */}
+            {results.insights && results.insights.length > 0 && (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)',
+                padding: '2rem',
+                borderRadius: '1.5rem',
+                border: '2px solid rgba(139, 92, 246, 0.4)',
+                backdropFilter: 'blur(20px)'
+              }}>
+                <h3 style={{ color: '#8b5cf6', fontSize: '1.75rem', fontWeight: '800', marginBottom: '1.5rem' }}>
+                  ML-ANALYZED INSIGHTS
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {results.insights.map((insight, idx) => (
+                    <div key={idx} style={{
+                      padding: '1.5rem',
+                      background: insight.type === 'success' 
+                        ? 'rgba(16, 185, 129, 0.1)' 
+                        : 'rgba(59, 130, 246, 0.1)',
+                      borderLeft: `4px solid ${insight.type === 'success' ? '#10b981' : '#3b82f6'}`,
+                      borderRadius: '0.75rem',
+                      color: '#e2e8f0',
+                      fontSize: '1.1rem',
+                      lineHeight: '1.6'
+                    }}>
+                      {insight.message}
+                      </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 0.15; }
+          50% { transform: scale(1.1); opacity: 0.25; }
+        }
+      `}</style>
+                    </div>
+                  );
+};
+
+// Metric Card Component
+const MetricCard = ({ label, value1, value2, team1, team2, winner, delta, format, inverted = false }) => {
+  const isTeam1Winner = inverted ? value1 < value2 : value1 > value2;
                   
                   return (
-                    <div key={idx} className="bar-row" style={{ animationDelay: `${0.05 * idx}s` }}>
-                      <div className="bar-label">{metric.label}</div>
-                      <div className="bar-track">
-                        <div
-                          className="bar bar-a"
-                          style={{ 
-                            width: `${percentA}%`,
-                            background: winner === 'A' ? 'linear-gradient(90deg, #ff2a4d, #ff6b35)' : 'rgba(255, 42, 77, 0.5)'
-                          }}
-                        ></div>
-                        <div
-                          className="bar bar-b"
-                          style={{ 
-                            width: `${percentB}%`,
-                            background: winner === 'B' ? 'linear-gradient(90deg, #00d2ff, #00ff88)' : 'rgba(0, 210, 255, 0.5)'
-                          }}
-                        ></div>
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)',
+      padding: '2rem',
+      borderRadius: '1.5rem',
+      border: '2px solid rgba(71, 85, 105, 0.4)',
+      backdropFilter: 'blur(20px)',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        padding: '0.5rem 1rem',
+        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+        borderRadius: '9999px',
+        fontSize: '0.75rem',
+        fontWeight: '800',
+        color: '#fff'
+      }}>
+        Δ {delta}
                       </div>
-                      <div className="bar-values">
-                        <span className="va" style={{ fontWeight: winner === 'A' ? 'bold' : 'normal' }}>
-                          {metric.valueA}{metric.unit || ''}
-                        </span>
-                        <span className="vb" style={{ fontWeight: winner === 'B' ? 'bold' : 'normal' }}>
-                          {metric.valueB}{metric.unit || ''}
+
+      <h4 style={{ 
+        color: '#94a3b8', 
+        fontSize: '0.9rem', 
+        fontWeight: '600', 
+        textTransform: 'uppercase', 
+        margin: '0 0 1.5rem 0',
+        letterSpacing: '1px'
+      }}>
+        {label}
+      </h4>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+        <div style={{ flex: 1 }}>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>{team1}</p>
+          <p style={{ 
+            color: isTeam1Winner ? '#10b981' : '#e2e8f0', 
+            fontSize: '2.5rem', 
+            fontWeight: '900', 
+            margin: 0,
+            textShadow: isTeam1Winner ? '0 0 20px rgba(16, 185, 129, 0.5)' : 'none'
+          }}>
+            {value1}
+          </p>
+            </div>
+
+        <div style={{
+          width: '3px',
+          height: '60px',
+          background: 'linear-gradient(180deg, #ef4444 0%, #3b82f6 100%)',
+          margin: '0 2rem',
+          borderRadius: '9999px'
+        }}></div>
+
+        <div style={{ flex: 1, textAlign: 'right' }}>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>{team2}</p>
+          <p style={{ 
+            color: !isTeam1Winner ? '#10b981' : '#e2e8f0', 
+            fontSize: '2.5rem', 
+            fontWeight: '900', 
+            margin: 0,
+            textShadow: !isTeam1Winner ? '0 0 20px rgba(16, 185, 129, 0.5)' : 'none'
+          }}>
+            {value2}
+          </p>
+        </div>
+      </div>
+
+      <div style={{
+                      display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '0.5rem',
+        padding: '0.75rem',
+        background: isTeam1Winner 
+          ? 'rgba(239, 68, 68, 0.1)' 
+          : 'rgba(59, 130, 246, 0.1)',
+        borderRadius: '0.5rem'
+      }}>
+        <Check size={16} color={isTeam1Winner ? '#ef4444' : '#3b82f6'} />
+        <span style={{ 
+          color: isTeam1Winner ? '#ef4444' : '#3b82f6', 
+          fontSize: '0.9rem', 
+          fontWeight: '700' 
+        }}>
+          {winner} leads by {delta}
                         </span>
                       </div>
                     </div>
                   );
-                })}
+};
+
+// ============================================================================
+// STUNNING VISUAL COMPARISON COMPONENTS - FASTF1 BASED
+// ============================================================================
+
+// Visual Progress Bar Comparison
+const VisualComparisonBar = ({ label, value1, value2, team1, team2, max, unit = '', color1 = '#ef4444', color2 = '#3b82f6', inverted = false, icon }) => {
+  const team1Better = inverted ? value1 < value2 : value1 > value2;
+  const percentage1 = (value1 / max) * 100;
+  const percentage2 = (value2 / max) * 100;
+  
+  return (
+    <div style={{ marginBottom: '2.5rem' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '1rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '1.5rem' }}>{icon}</span>
+          <span style={{ color: '#e2e8f0', fontSize: '1.2rem', fontWeight: '700' }}>{label}</span>
+        </div>
+        <div style={{ 
+          background: team1Better ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(71, 85, 105, 0.3)',
+          padding: '0.4rem 1rem',
+          borderRadius: '2rem',
+          fontSize: '0.85rem',
+          fontWeight: '800',
+          color: '#fff'
+        }}>
+          Δ {Math.abs(value1 - value2).toFixed(2)}{unit}
               </div>
             </div>
 
-            {/* Insights Card */}
-            <div className="insights-card">
-              <h3 className="card-title">ML-Analyzed Insights</h3>
-              <div style={{ display: 'grid', gap: '12px' }}>
-                {results.insights.map((insight, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      padding: '14px 16px',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      borderRadius: '10px',
-                      borderLeft: `3px solid ${getInsightColor(insight.type)}`,
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      fontSize: '0.92rem',
-                      lineHeight: '1.5',
+      <div style={{ position: 'relative' }}>
+        {/* Team 1 Bar */}
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{ 
                       display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '12px'
-                    }}
-                  >
-                    <div style={{ color: getInsightColor(insight.type), marginTop: '2px' }}>
-                      {getInsightIcon(insight.icon)}
+            justifyContent: 'space-between',
+            marginBottom: '0.5rem'
+          }}>
+            <span style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '600' }}>{team1}</span>
+            <span style={{ color: color1, fontSize: '1.1rem', fontWeight: '800' }}>{value1.toFixed(2)}{unit}</span>
                     </div>
-                    <div style={{ flex: 1 }}>{insight.message}</div>
+          <div style={{ 
+            width: '100%', 
+            height: '24px', 
+            background: 'rgba(30, 41, 59, 0.6)',
+            borderRadius: '1rem',
+            overflow: 'hidden',
+            border: '1px solid rgba(71, 85, 105, 0.3)'
+          }}>
+            <div style={{
+              width: `${percentage1}%`,
+              height: '100%',
+              background: team1Better 
+                ? `linear-gradient(90deg, ${color1} 0%, ${color1}dd 100%)`
+                : `linear-gradient(90deg, ${color1}88 0%, ${color1}66 100%)`,
+              borderRadius: '1rem',
+              transition: 'width 1s ease',
+              boxShadow: team1Better ? `0 0 20px ${color1}66` : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              paddingRight: '0.75rem'
+            }}>
+              {team1Better && <span style={{ color: '#fff', fontWeight: '800', fontSize: '0.75rem' }}>★</span>}
                   </div>
-                ))}
               </div>
-              <div
-                style={{
-                  marginTop: '20px',
-                  padding: '20px',
-                  background: 'linear-gradient(135deg, rgba(255, 42, 77, 0.15), rgba(0, 210, 255, 0.15))',
-                  borderRadius: '12px',
-                  textAlign: 'center',
-                }}
-              >
-                <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.85rem', marginBottom: '8px' }}>
-                  Overall Winner
                 </div>
-                <div
+        
+        {/* Team 2 Bar */}
+        <div>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            marginBottom: '0.5rem'
+          }}>
+            <span style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '600' }}>{team2}</span>
+            <span style={{ color: color2, fontSize: '1.1rem', fontWeight: '800' }}>{value2.toFixed(2)}{unit}</span>
+          </div>
+          <div style={{ 
+            width: '100%', 
+            height: '24px', 
+            background: 'rgba(30, 41, 59, 0.6)',
+            borderRadius: '1rem',
+            overflow: 'hidden',
+            border: '1px solid rgba(71, 85, 105, 0.3)'
+          }}>
+            <div style={{
+              width: `${percentage2}%`,
+              height: '100%',
+              background: !team1Better 
+                ? `linear-gradient(90deg, ${color2} 0%, ${color2}dd 100%)`
+                : `linear-gradient(90deg, ${color2}88 0%, ${color2}66 100%)`,
+              borderRadius: '1rem',
+              transition: 'width 1s ease',
+              boxShadow: !team1Better ? `0 0 20px ${color2}66` : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              paddingRight: '0.75rem'
+            }}>
+              {!team1Better && <span style={{ color: '#fff', fontWeight: '800', fontSize: '0.75rem' }}>★</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Radial Performance Indicator
+const RadialPerformance = ({ label, value, max = 100, color = '#8b5cf6', icon, subtitle }) => {
+  const percentage = (value / max) * 100;
+  const circumference = 2 * Math.PI * 45;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)',
+      padding: '2rem',
+      borderRadius: '1.5rem',
+      border: `2px solid ${color}40`,
+      textAlign: 'center',
+      backdropFilter: 'blur(20px)',
+      boxShadow: `0 10px 30px ${color}25`
+    }}>
+      <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{icon}</div>
+      <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 1.5rem' }}>
+        {/* Background Circle */}
+        <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
+          <circle
+            cx="60"
+            cy="60"
+            r="45"
+            stroke="rgba(71, 85, 105, 0.3)"
+            strokeWidth="10"
+            fill="none"
+          />
+          <circle
+            cx="60"
+            cy="60"
+            r="45"
+            stroke={color}
+            strokeWidth="10"
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
                   style={{
-                    fontSize: '1.8rem',
+              transition: 'stroke-dashoffset 1.5s ease',
+              filter: `drop-shadow(0 0 8px ${color})`
+            }}
+          />
+        </svg>
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          fontSize: '1.75rem',
                     fontWeight: '900',
-                    background: 'linear-gradient(90deg, #ff2a4d, #00d2ff)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    marginBottom: '8px'
-                  }}
-                >
-                  {results.winner}
+          color: color
+        }}>
+          {value.toFixed(1)}
                 </div>
-                {results.lapTimeDelta && (
-                  <div style={{ fontSize: '0.9rem', color: '#00ff88' }}>
-                    +{Math.abs(results.lapTimeDelta).toFixed(3)}s per lap
                   </div>
-                )}
+      <div style={{ color: '#e2e8f0', fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.5rem' }}>{label}</div>
+      {subtitle && <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{subtitle}</div>}
               </div>
-            </div>
-          </div>
+  );
+};
 
-          {/* Metrics Row - Speed & Performance Stats */}
-          <div className="metrics-row animate-in" style={{ animationDelay: '0.4s' }}>
-            <div className="metric-card">
-              <div className="metric-title">{comparisonMode === 'teams' ? team1 : 'Design A'} Top Speed</div>
-              <div className="metric-value">
-                {results.metrics.find(m => m.label === 'Top Speed')?.valueA?.toFixed(1) || 'N/A'}
-              </div>
-              <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' }}>km/h</div>
+// Component Card Component - ENHANCED
+const ComponentCard = ({ component, value1, value2, team1, team2, winner, details1, details2, icon, color, enhancedData = {} }) => {
+  const team1Better = value1 > value2;
+  
+  // Render additional metrics based on component type
+  const renderEnhancedMetrics = () => {
+    if (!enhancedData) return null;
+    
+    const metrics = [];
+    
+    // Front Wing specific metrics
+    if (component === 'Front Wing') {
+      if (enhancedData.wingAngle1 !== undefined) {
+        metrics.push({ label: 'Wing Angle', val1: `${enhancedData.wingAngle1.toFixed(1)}°`, val2: `${enhancedData.wingAngle2.toFixed(1)}°`, unit: '', icon: '📐' });
+      }
+      if (enhancedData.endplateQuality1 !== undefined) {
+        metrics.push({ label: 'Endplate Quality', val1: enhancedData.endplateQuality1.toFixed(1), val2: enhancedData.endplateQuality2.toFixed(1), unit: '%', icon: '🎯' });
+      }
+      if (enhancedData.y250Potential1 !== undefined) {
+        metrics.push({ label: 'Y250 Vortex', val1: enhancedData.y250Potential1.toFixed(1), val2: enhancedData.y250Potential2.toFixed(1), unit: '%', icon: '🌪️' });
+      }
+      if (enhancedData.elementCount1 !== undefined) {
+        metrics.push({ label: 'Element Count', val1: enhancedData.elementCount1, val2: enhancedData.elementCount2, unit: '', icon: '📊' });
+      }
+      if (enhancedData.downforceCd1 !== undefined) {
+        metrics.push({ label: 'Downforce Cd', val1: enhancedData.downforceCd1.toFixed(3), val2: enhancedData.downforceCd2.toFixed(3), unit: '', icon: '⬇️' });
+      }
+    }
+    
+    // Rear Wing specific metrics
+    if (component === 'Rear Wing') {
+      if (enhancedData.drsPotential1 !== undefined) {
+        metrics.push({ label: 'DRS Potential', val1: enhancedData.drsPotential1.toFixed(1), val2: enhancedData.drsPotential2.toFixed(1), unit: '%', icon: '⚡' });
+      }
+      if (enhancedData.dragCd1 !== undefined) {
+        metrics.push({ label: 'Drag Coefficient', val1: enhancedData.dragCd1.toFixed(3), val2: enhancedData.dragCd2.toFixed(3), unit: '', icon: '💨' });
+      }
+    }
+    
+    // Sidepods specific metrics
+    if (component === 'Sidepods') {
+      if (enhancedData.designType1) {
+        metrics.push({ label: 'Design Type', val1: enhancedData.designType1, val2: enhancedData.designType2, unit: '', icon: '🔧' });
+      }
+      if (enhancedData.coolingCapacity1 !== undefined) {
+        metrics.push({ label: 'Cooling Capacity', val1: enhancedData.coolingCapacity1.toFixed(1), val2: enhancedData.coolingCapacity2.toFixed(1), unit: '%', icon: '❄️' });
+      }
+      if (enhancedData.undercutAgg1 !== undefined) {
+        metrics.push({ label: 'Undercut Aggressiveness', val1: enhancedData.undercutAgg1.toFixed(1), val2: enhancedData.undercutAgg2.toFixed(1), unit: '%', icon: '📐' });
+      }
+    }
+    
+    // Diffuser specific metrics
+    if (component === 'Diffuser') {
+      if (enhancedData.expansionAngle1 !== undefined) {
+        metrics.push({ label: 'Expansion Angle', val1: `${enhancedData.expansionAngle1.toFixed(1)}°`, val2: `${enhancedData.expansionAngle2.toFixed(1)}°`, unit: '', icon: '📐' });
+      }
+      if (enhancedData.strakeCount1 !== undefined) {
+        metrics.push({ label: 'Strake Count', val1: enhancedData.strakeCount1, val2: enhancedData.strakeCount2, unit: '', icon: '🔢' });
+      }
+      if (enhancedData.downforceContribution1 !== undefined) {
+        metrics.push({ label: 'Downforce Contribution', val1: enhancedData.downforceContribution1.toFixed(1), val2: enhancedData.downforceContribution2.toFixed(1), unit: '%', icon: '⬇️' });
+      }
+    }
+    
+    // Floor specific metrics
+    if (component === 'Floor') {
+      if (enhancedData.fenceCount1 !== undefined) {
+        metrics.push({ label: 'Fence Count', val1: enhancedData.fenceCount1, val2: enhancedData.fenceCount2, unit: '', icon: '🔢' });
+      }
+      if (enhancedData.edgeWingComplexity1 !== undefined) {
+        metrics.push({ label: 'Edge Wing Complexity', val1: enhancedData.edgeWingComplexity1.toFixed(1), val2: enhancedData.edgeWingComplexity2.toFixed(1), unit: '%', icon: '📊' });
+      }
+      if (enhancedData.groundEffect1 !== undefined) {
+        metrics.push({ label: 'Ground Effect', val1: enhancedData.groundEffect1.toFixed(1), val2: enhancedData.groundEffect2.toFixed(1), unit: '%', icon: '🌀' });
+      }
+    }
+    
+    if (metrics.length === 0) return null;
+    
+    return (
+      <div style={{
+        marginTop: '1.5rem',
+        padding: '1.5rem',
+        background: 'rgba(15, 23, 42, 0.6)',
+        borderRadius: '1rem',
+        border: `1px solid ${color}30`
+      }}>
+        <h5 style={{ color: color, fontSize: '1.1rem', fontWeight: '700', margin: '0 0 1rem 0', textAlign: 'center' }}>
+          📊 DETAILED METRICS
+        </h5>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+          {metrics.map((metric, idx) => (
+            <div key={idx} style={{
+              padding: '1rem',
+              background: 'rgba(30, 41, 59, 0.5)',
+              borderRadius: '0.75rem',
+              border: '1px solid rgba(71, 85, 105, 0.3)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '1.25rem' }}>{metric.icon}</span>
+                <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '600' }}>{metric.label}</span>
             </div>
-            <div className="metric-card">
-              <div className="metric-title">{comparisonMode === 'teams' ? team2 : 'Design B'} Top Speed</div>
-              <div className="metric-value">
-                {results.metrics.find(m => m.label === 'Top Speed')?.valueB?.toFixed(1) || 'N/A'}
-              </div>
-              <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' }}>km/h</div>
-            </div>
-            <div className="metric-card">
-              <div className="metric-title">Speed Delta</div>
-              <div className="metric-value" style={{ 
-                color: (() => {
-                  const topSpeedMetric = results.metrics.find(m => m.label === 'Top Speed');
-                  if (!topSpeedMetric) return '#fff';
-                  const delta = topSpeedMetric.valueA - topSpeedMetric.valueB;
-                  return delta > 0 ? '#00ff88' : '#ff2a4d';
-                })()
-              }}>
-                {(() => {
-                  const topSpeedMetric = results.metrics.find(m => m.label === 'Top Speed');
-                  if (!topSpeedMetric) return 'N/A';
-                  const delta = topSpeedMetric.valueA - topSpeedMetric.valueB;
-                  return `${delta > 0 ? '+' : ''}${delta.toFixed(1)} km/h`;
-                })()}
-              </div>
-              <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' }}>
-                {(() => {
-                  const topSpeedMetric = results.metrics.find(m => m.label === 'Top Speed');
-                  if (!topSpeedMetric) return '';
-                  const delta = topSpeedMetric.valueA - topSpeedMetric.valueB;
-                  const winner = delta > 0 ? (comparisonMode === 'teams' ? team1 : 'Design A') : (comparisonMode === 'teams' ? team2 : 'Design B');
-                  return `${winner} faster`;
-                })()}
-              </div>
-            </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <p style={{ color: '#64748b', fontSize: '0.7rem', margin: '0 0 0.25rem 0' }}>{team1}</p>
+                  <p style={{ color: '#e2e8f0', fontSize: '1.25rem', fontWeight: '800', margin: 0 }}>
+                    {metric.val1}{metric.unit}
+                  </p>
           </div>
-          
-          {/* Corner Speed Comparison */}
-          <div className="metrics-row animate-in" style={{ animationDelay: '0.45s', marginTop: '20px' }}>
-            <div className="metric-card">
-              <div className="metric-title">{comparisonMode === 'teams' ? team1 : 'Design A'} Corner Speed</div>
-              <div className="metric-value">
-                {results.metrics.find(m => m.label === 'Corner Speed')?.valueA?.toFixed(1) || 'N/A'}
-              </div>
-              <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' }}>km/h avg</div>
-            </div>
-            <div className="metric-card">
-              <div className="metric-title">{comparisonMode === 'teams' ? team2 : 'Design B'} Corner Speed</div>
-              <div className="metric-value">
-                {results.metrics.find(m => m.label === 'Corner Speed')?.valueB?.toFixed(1) || 'N/A'}
-              </div>
-              <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' }}>km/h avg</div>
-            </div>
-            <div className="metric-card">
-              <div className="metric-title">Lap Time Delta</div>
-              <div className="metric-value" style={{ 
-                color: results.lapTimeDelta && results.lapTimeDelta < 0 ? '#00ff88' : '#ff2a4d'
-              }}>
-                {results.lapTimeDelta ? `${results.lapTimeDelta > 0 ? '+' : ''}${results.lapTimeDelta.toFixed(3)}s` : 'N/A'}
-              </div>
-              <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' }}>
-                {results.winner} wins
+                <div style={{ color: '#475569', fontSize: '0.75rem', fontWeight: '700' }}>VS</div>
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <p style={{ color: '#64748b', fontSize: '0.7rem', margin: '0 0 0.25rem 0' }}>{team2}</p>
+                  <p style={{ color: '#e2e8f0', fontSize: '1.25rem', fontWeight: '800', margin: 0 }}>
+                    {metric.val2}{metric.unit}
+                  </p>
               </div>
             </div>
+              </div>
+          ))}
+            </div>
+              </div>
+    );
+  };
+  
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)',
+      padding: '2.5rem',
+      borderRadius: '1.5rem',
+      border: `3px solid ${color}40`,
+      backdropFilter: 'blur(20px)',
+      marginBottom: '2rem',
+      boxShadow: `0 20px 60px ${color}20`,
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Glow effect */}
+      <div style={{
+        position: 'absolute',
+        top: '-50%',
+        right: '-50%',
+        width: '200px',
+        height: '200px',
+        background: `radial-gradient(circle, ${color}30 0%, transparent 70%)`,
+        borderRadius: '50%',
+        filter: 'blur(60px)',
+        pointerEvents: 'none'
+      }}></div>
+      
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', position: 'relative', zIndex: 1 }}>
+        <div style={{
+          width: '60px',
+          height: '60px',
+          borderRadius: '1rem',
+          background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '2rem',
+          boxShadow: `0 10px 30px ${color}60`
+        }}>
+          {icon}
+            </div>
+        <div>
+          <h4 style={{ color: color, fontSize: '1.75rem', fontWeight: '900', margin: 0 }}>
+            {component}
+          </h4>
+          <p style={{ color: '#94a3b8', fontSize: '1rem', margin: '0.25rem 0 0 0' }}>
+            Deep CV + ML Analysis
+          </p>
           </div>
-        </>
-      )}
+              </div>
 
-      {/* Footer */}
-      <div className="compare-footer">
-        <p>Powered by Advanced ML Aerodynamic Analysis • 2025 Season Data</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '2rem', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+        {/* Team 1 */}
+        <div>
+          <div style={{
+            padding: '2rem',
+            background: team1Better ? 'rgba(16, 185, 129, 0.2)' : 'rgba(51, 65, 85, 0.6)',
+            borderRadius: '1.25rem',
+            border: team1Better ? '3px solid #10b981' : '2px solid rgba(71, 85, 105, 0.4)',
+            textAlign: 'center',
+            boxShadow: team1Better ? '0 10px 30px rgba(16, 185, 129, 0.3)' : 'none'
+          }}>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', margin: '0 0 1rem 0', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '700' }}>{team1}</p>
+            <p style={{ 
+              color: team1Better ? '#10b981' : '#e2e8f0', 
+              fontSize: '3.5rem', 
+              fontWeight: '900', 
+              margin: '0 0 0.75rem 0',
+              textShadow: team1Better ? '0 0 30px rgba(16, 185, 129, 0.6)' : 'none'
+            }}>
+              {value1.toFixed(1)}%
+            </p>
+            {details1 && (
+              <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>
+                {details1}
+              </p>
+            )}
+            </div>
+              </div>
+
+        {/* Winner Arrow */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '0.75rem'
+        }}>
+          <ArrowRight 
+            size={40} 
+            color={team1Better ? '#ef4444' : '#3b82f6'}
+            style={{
+              transform: team1Better ? 'rotate(180deg)' : 'none',
+              transition: 'transform 0.3s ease',
+              filter: `drop-shadow(0 0 10px ${team1Better ? '#ef4444' : '#3b82f6'})`
+            }}
+          />
+          <span style={{ 
+            color: '#fff', 
+            fontSize: '0.85rem', 
+            fontWeight: '800',
+            textAlign: 'center',
+            background: team1Better ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            padding: '0.5rem 1rem',
+            borderRadius: '9999px',
+            boxShadow: team1Better ? '0 4px 15px rgba(239, 68, 68, 0.4)' : '0 4px 15px rgba(59, 130, 246, 0.4)'
+          }}>
+            +{Math.abs(value1 - value2).toFixed(1)}%
+          </span>
+            </div>
+
+        {/* Team 2 */}
+        <div>
+          <div style={{
+            padding: '2rem',
+            background: !team1Better ? 'rgba(16, 185, 129, 0.2)' : 'rgba(51, 65, 85, 0.6)',
+            borderRadius: '1.25rem',
+            border: !team1Better ? '3px solid #10b981' : '2px solid rgba(71, 85, 105, 0.4)',
+            textAlign: 'center',
+            boxShadow: !team1Better ? '0 10px 30px rgba(16, 185, 129, 0.3)' : 'none'
+          }}>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', margin: '0 0 1rem 0', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '700' }}>{team2}</p>
+            <p style={{ 
+              color: !team1Better ? '#10b981' : '#e2e8f0', 
+              fontSize: '3.5rem', 
+              fontWeight: '900', 
+              margin: '0 0 0.75rem 0',
+              textShadow: !team1Better ? '0 0 30px rgba(16, 185, 129, 0.6)' : 'none'
+            }}>
+              {value2.toFixed(1)}%
+            </p>
+            {details2 && (
+              <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>
+                {details2}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Metrics */}
+      {renderEnhancedMetrics()}
+
+      {/* Winner Banner */}
+      <div style={{
+        marginTop: '2rem',
+        padding: '1.25rem',
+        background: `linear-gradient(135deg, ${color}25 0%, ${color}15 100%)`,
+        borderRadius: '1rem',
+        textAlign: 'center',
+        border: `2px solid ${color}50`,
+        boxShadow: `0 8px 25px ${color}20`
+      }}>
+        <span style={{ color: color, fontWeight: '800', fontSize: '1.2rem', textShadow: `0 0 10px ${color}60` }}>
+          ✓ {winner} has the superior {component.toLowerCase()}
+        </span>
       </div>
     </div>
   );
 };
 
 export default Compare;
-

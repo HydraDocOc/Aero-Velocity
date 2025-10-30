@@ -362,8 +362,8 @@ User Input → React Component → mlService.js → Flask API → ML Models → 
 - Aston Martin
 - Alpine
 - Williams
-- AlphaTauri
-- Alfa Romeo
+- Racing Bulls
+- Kick Sauber
 - Haas
 
 ## 🏁 Available Circuits

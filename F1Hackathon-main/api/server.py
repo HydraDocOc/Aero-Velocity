@@ -25,6 +25,7 @@ from ml_models.performance_estimator import PerformanceEstimator
 from ml_models.aero_predictor import AeroPredictionModel
 from ml_models.upgrade_recommender import UpgradeRecommender
 from analysis.component_analyzer import ComponentAnalyzer
+from analysis.team_comparison_analyzer import TeamComparisonAnalyzer
 
 # Initialize FastAPI
 app = FastAPI(
@@ -62,6 +63,8 @@ upgrade_recommender = UpgradeRecommender()
 print("✓ ML Upgrade Recommender loaded")
 component_analyzer = ComponentAnalyzer()
 print("✓ Component Analyzer loaded")
+team_comparison_analyzer = TeamComparisonAnalyzer()
+print("✓ Team Comparison Analyzer (FastF1-based) loaded")
 print("="*60)
 print("✅ ALL REAL ML MODELS & PHYSICS SYSTEMS READY!")
 print("="*60)
@@ -469,19 +472,22 @@ async def simulate_circuit(data: dict):
             "race_lap_time": circuit_analysis.race_lap_time,
             "time_gain_quali": safe_float(circuit_analysis.time_gain_quali, 0.0),
             "time_gain_race": safe_float(circuit_analysis.time_gain_race, 0.0),
-            "setup_recommendations": generate_ml_setup_recommendations(
-                track_config,
-                aero_config,
-                CarParameters(
-                    drag_coefficient=optimal_aero.get('drag_coefficient', 0.70),
-                    cl_front=optimal_aero.get('cl_front', 1.5),
-                    cl_rear=optimal_aero.get('cl_rear', 2.0),
-                    front_wing_angle=optimal_aero.get('front_wing_angle', 22.0),
-                    rear_wing_angle=optimal_aero.get('rear_wing_angle', 26.0),
-                    ride_height_front=optimal_aero.get('ride_height_front', 12.0),
-                    ride_height_rear=optimal_aero.get('ride_height_rear', 14.0)
-                )
-            ),
+            "setup_recommendations": {
+                **generate_ml_setup_recommendations(
+                    track_config,
+                    aero_config,
+                    CarParameters(
+                        drag_coefficient=optimal_aero.get('drag_coefficient', 0.70),
+                        cl_front=optimal_aero.get('cl_front', 1.5),
+                        cl_rear=optimal_aero.get('cl_rear', 2.0),
+                        front_wing_angle=optimal_aero.get('front_wing_angle', 22.0),
+                        rear_wing_angle=optimal_aero.get('rear_wing_angle', 26.0),
+                        ride_height_front=optimal_aero.get('ride_height_front', 12.0),
+                        ride_height_rear=optimal_aero.get('ride_height_rear', 14.0)
+                    )
+                ),
+                "estimated_laptime_gain": f"{safe_float(circuit_analysis.time_gain_quali, 0.0):.2f}"
+            },
             "critical_corners": identify_critical_corners(
                 track_config,
                 CarParameters(
@@ -533,7 +539,7 @@ def get_team_characteristics(team_name: str) -> dict:
         "Aston Martin": {"drag_coefficient": 0.70, "cl_front": 1.5, "cl_rear": 2.1, "wing_offset": 1},
         "Alpine": {"drag_coefficient": 0.72, "cl_front": 1.5, "cl_rear": 2.0, "wing_offset": -1},
         "Williams": {"drag_coefficient": 0.73, "cl_front": 1.4, "cl_rear": 1.9, "wing_offset": -1},
-        "RB": {"drag_coefficient": 0.71, "cl_front": 1.5, "cl_rear": 2.0, "wing_offset": 0},
+        "Racing Bulls": {"drag_coefficient": 0.71, "cl_front": 1.5, "cl_rear": 2.0, "wing_offset": 0},
         "Kick Sauber": {"drag_coefficient": 0.74, "cl_front": 1.4, "cl_rear": 1.9, "wing_offset": 1},
         "Haas F1 Team": {"drag_coefficient": 0.73, "cl_front": 1.4, "cl_rear": 1.9, "wing_offset": 0}
     }
@@ -542,7 +548,7 @@ def get_team_characteristics(team_name: str) -> dict:
 
 @app.post("/api/compare/teams")
 async def compare_teams(data: dict):
-    """Compare two teams using REAL ML Analysis"""
+    """Compare two teams using REAL FastF1 Telemetry Data"""
     try:
         team1 = data.get("team1")
         team2 = data.get("team2")
@@ -551,164 +557,15 @@ async def compare_teams(data: dict):
         if not team1 or not team2 or not track_name:
             raise HTTPException(status_code=400, detail="team1, team2, and track are required")
         
-        print(f"\n🔬 LIVE TEAM COMPARISON: {team1} vs {team2} at {track_name}")
+        print(f"\n🏎️ FASTF1-BASED TEAM COMPARISON: {team1} vs {team2} at {track_name}")
         
-        track_config = get_track_by_name(track_name)
-        if not track_config:
-            raise HTTPException(status_code=404, detail=f"Track {track_name} not found")
+        # Use the FastF1-based team comparison analyzer
+        comparison_result = team_comparison_analyzer.compare_teams(team1, team2, track_name)
         
-        # REAL ML Analysis for Team 1
-        print(f"  → Analyzing {team1} with ML models...")
+        print(f"  🏆 Winner: {comparison_result['faster_team']} (Δ {comparison_result['lap_time_delta']:.3f}s)")
+        print(f"  📊 Data Source: {comparison_result['data_source']}")
         
-        # Get team-specific characteristics (different drag/downforce philosophies)
-        team1_chars = get_team_characteristics(team1)
-        team2_chars = get_team_characteristics(team2)
-        
-        aero_config1 = {
-            "drag_coefficient": team1_chars['drag_coefficient'],
-            "cl_front": team1_chars['cl_front'],
-            "cl_rear": team1_chars['cl_rear'],
-            "front_wing_angle": track_config.optimal_front_wing_angle + team1_chars['wing_offset'],
-            "rear_wing_angle": track_config.optimal_rear_wing_angle + team1_chars['wing_offset'],
-            "ride_height_front": track_config.optimal_ride_height_front,
-            "ride_height_rear": track_config.optimal_ride_height_rear
-        }
-        
-        circuit1 = circuit_analyzer.analyze_circuit(track_name, aero_config1)
-        perf1 = performance_estimator.estimate_performance(aero_config1, track_config.__dict__)
-        comp1 = component_analyzer.analyze_all_components(team1, aero_config1, track_config.__dict__)
-        
-        # REAL ML Analysis for Team 2
-        print(f"  → Analyzing {team2} with ML models...")
-        
-        aero_config2 = {
-            "drag_coefficient": team2_chars['drag_coefficient'],
-            "cl_front": team2_chars['cl_front'],
-            "cl_rear": team2_chars['cl_rear'],
-            "front_wing_angle": track_config.optimal_front_wing_angle + team2_chars['wing_offset'],
-            "rear_wing_angle": track_config.optimal_rear_wing_angle + team2_chars['wing_offset'],
-            "ride_height_front": track_config.optimal_ride_height_front,
-            "ride_height_rear": track_config.optimal_ride_height_rear
-        }
-        
-        circuit2 = circuit_analyzer.analyze_circuit(track_name, aero_config2)
-        perf2 = performance_estimator.estimate_performance(aero_config2, track_config.__dict__)
-        comp2 = component_analyzer.analyze_all_components(team2, aero_config2, track_config.__dict__)
-        
-        # Parse lap times and apply REAL performance differences
-        def parse_lap_time(time_str):
-            parts = time_str.split(":")
-            return float(parts[0]) * 60 + float(parts[1])
-        
-        base_laptime1 = parse_lap_time(circuit1.qualifying_lap_time)
-        base_laptime2 = parse_lap_time(circuit2.qualifying_lap_time)
-        
-        # Apply realistic performance deltas based on aero characteristics
-        # Each 0.01 Cd difference ≈ 0.05s per lap
-        # Each 0.1 CL difference ≈ 0.03s per lap (track dependent)
-        
-        cd_delta = aero_config1['drag_coefficient'] - aero_config2['drag_coefficient']
-        cl_delta = (aero_config1['cl_front'] + aero_config1['cl_rear']) - (aero_config2['cl_front'] + aero_config2['cl_rear'])
-        
-        # Drag impact (more drag = slower)
-        laptime1_drag_penalty = cd_delta * 5.0  # 5s per 0.1 Cd difference
-        
-        # Downforce impact (depends on track type)
-        if track_config.downforce_level.value in ['high', 'very_high']:
-            # High DF tracks: more downforce = faster
-            laptime1_df_gain = -cl_delta * 0.3  # 0.3s faster per 0.1 CL more
-        elif track_config.downforce_level.value == 'low':
-            # Low DF tracks: more downforce = slower (more drag)
-            laptime1_df_gain = cl_delta * 0.15  # Slight penalty
-        else:
-            # Medium tracks: balanced
-            laptime1_df_gain = -cl_delta * 0.15
-        
-        # Apply deltas
-        laptime1_seconds = base_laptime1 + laptime1_drag_penalty + laptime1_df_gain
-        laptime2_seconds = base_laptime2
-        
-        # Format back to MM:SS.mmm
-        def format_lap_time(seconds):
-            minutes = int(seconds // 60)
-            secs = seconds % 60
-            return f"{minutes}:{secs:06.3f}"
-        
-        team1_final_laptime = format_lap_time(laptime1_seconds)
-        team2_final_laptime = format_lap_time(laptime2_seconds)
-        
-        lap_time1 = laptime1_seconds
-        lap_time2 = laptime2_seconds
-        
-        # Component comparison
-        component_comparison = {}
-        for component in AERODYNAMIC_COMPONENTS:
-            if component in comp1 and component in comp2:
-                component_comparison[component] = {
-                    "team1_efficiency": comp1[component].efficiency_score,
-                    "team2_efficiency": comp2[component].efficiency_score,
-                    "delta": comp1[component].efficiency_score - comp2[component].efficiency_score
-                }
-        
-        # Calculate deltas
-        lap_time_delta = lap_time1 - lap_time2
-        faster_team = team1 if lap_time_delta < 0 else team2
-        top_speed_delta = perf1.get('top_speed', 350) - perf2.get('top_speed', 348)
-        corner_speed_delta = perf1.get('avg_corner_speed', 180) - perf2.get('avg_corner_speed', 182)
-        ld_ratio1 = perf1.get('ld_ratio', 4.5)
-        ld_ratio2 = perf2.get('ld_ratio', 4.3)
-        accel1 = perf1.get('acceleration_0_100', 2.6)
-        accel2 = perf2.get('acceleration_0_100', 2.7)
-        
-        print(f"  ✅ Comparison complete: {faster_team} faster by {abs(lap_time_delta):.3f}s")
-        print(f"     {team1}: {team1_final_laptime} vs {team2}: {team2_final_laptime}")
-        print(f"     Top Speed: {team1} {perf1.get('top_speed'):.1f} vs {team2} {perf2.get('top_speed'):.1f} km/h")
-        print(f"     Corner Speed: {team1} {perf1.get('avg_corner_speed'):.1f} vs {team2} {perf2.get('avg_corner_speed'):.1f} km/h")
-        
-        return {
-            "team1": team1,
-            "team2": team2,
-            "team1_name": team1,
-            "team2_name": team2,
-            "track": track_name,
-            "lap_time_delta": lap_time_delta,
-            "faster_team": faster_team,
-            "team1_lap_time": team1_final_laptime,
-            "team2_lap_time": team2_final_laptime,
-            "performance_comparison": {
-                "top_speed": {
-                    "team1": perf1.get('top_speed', 350),
-                    "team2": perf2.get('top_speed', 348),
-                    "delta": top_speed_delta
-                },
-                "corner_speed": {
-                    "team1": perf1.get('avg_corner_speed', 180),
-                    "team2": perf2.get('avg_corner_speed', 182),
-                    "delta": corner_speed_delta
-                },
-                "ld_ratio": {
-                    "team1": ld_ratio1,
-                    "team2": ld_ratio2,
-                    "delta": ld_ratio1 - ld_ratio2
-                },
-                "acceleration": {
-                    "team1": accel1,
-                    "team2": accel2,
-                    "delta": accel1 - accel2
-                },
-                "balance": {
-                    "team1": perf1.get('overall_balance', 40),
-                    "team2": perf2.get('overall_balance', 42),
-                    "delta": perf1.get('overall_balance', 40) - perf2.get('overall_balance', 42)
-                }
-            },
-            "component_comparison": component_comparison,
-            "aero_configs": {
-                "team1": aero_config1,
-                "team2": aero_config2
-            },
-            "source": "LIVE_ML_COMPARATIVE_ANALYSIS"
-        }
+        return comparison_result
     
     except Exception as e:
         print(f"  ❌ Error: {str(e)}")
@@ -769,63 +626,52 @@ async def recommend_upgrades(data: dict):
 
 @app.post("/api/analyze/image")
 async def analyze_image(data: dict):
-    """Analyze car from image using REAL Computer Vision"""
+    """
+    Analyze F1 car from image using REAL Computer Vision
+    Performs component-specific analysis for:
+    - Front Wing
+    - Rear Wing
+    - Sidepods
+    - Diffuser
+    - Floor
+    """
     try:
-        import base64
-        import io
-        from PIL import Image
-        import numpy as np
-        
         image_data = data.get("image_base64") or data.get("image")
-        team_name = data.get("team_name") or data.get("category", "Unknown")
+        component = data.get("category", "Full Car")
         
-        print(f"\n🔬 LIVE IMAGE ANALYSIS: {team_name}")
+        print(f"\n🔬 DEEP COMPONENT ANALYSIS: {component}")
         
-        # If actual image data is provided, decode and analyze it
+        # If actual image data is provided, use enhanced CV analysis
         if image_data and isinstance(image_data, str):
             try:
-                # Remove data URL prefix if present
-                if ',' in image_data:
-                    image_data = image_data.split(',')[1]
+                # Use the enhanced component analysis method
+                analysis = car_analyzer.analyze_component_from_image(image_data, component)
                 
-                # Decode base64 image
-                image_bytes = base64.b64decode(image_data)
-                image = Image.open(io.BytesIO(image_bytes))
+                print(f"  ✅ Component analysis complete:")
+                print(f"     Front Wing: {analysis['component_analysis']['front_wing']['efficiency']:.1f}%")
+                print(f"     Rear Wing: {analysis['component_analysis']['rear_wing']['efficiency']:.1f}%")
+                print(f"     Sidepods: {analysis['component_analysis']['sidepods']['efficiency']:.1f}%")
+                print(f"     Diffuser: {analysis['component_analysis']['diffuser']['efficiency']:.1f}%")
+                print(f"     Floor: {analysis['component_analysis']['floor']['efficiency']:.1f}%")
+                print(f"     Overall Aero Score: {analysis['aerodynamic_metrics']['overall_aero_score']:.1f}%")
                 
-                print(f"  📸 Image loaded: {image.size}")
-                
-                # Convert to numpy array for CV analysis
-                image_array = np.array(image)
-                
-                # REAL Computer Vision Analysis on actual image
-                # Note: F1CarImageAnalyzer expects image data
-                analysis = car_analyzer.analyze_components(image_array)
-                
-                # Enhance with team-specific metrics
-                if team_name and team_name != "Unknown":
-                    team_analysis = car_analyzer.comprehensive_analysis(team_name)
-                    # Merge the analyses
-                    analysis = {**team_analysis, **analysis}
-                
-                print(f"  ✅ Image analysis complete")
+                return analysis
                 
             except Exception as img_error:
-                print(f"  ⚠️ Image processing error, using team-based analysis: {str(img_error)}")
-                # Fallback to team-based analysis
-                analysis = car_analyzer.comprehensive_analysis(team_name)
+                print(f"  ⚠️ Image processing error: {str(img_error)}")
+                # Return fallback analysis
+                analysis = car_analyzer._generate_fallback_analysis()
+                return analysis
         else:
-            # No image data, use team-based analysis
-            print(f"  📊 Using team-based analysis (no image data)")
-            analysis = car_analyzer.comprehensive_analysis(team_name)
-        
-        return {
-            **analysis,
-            "source": "LIVE_COMPUTER_VISION",
-            "team_analyzed": team_name
-        }
+            # No image data, return fallback
+            print(f"  ⚠️ No image data provided, using fallback analysis")
+            analysis = car_analyzer._generate_fallback_analysis()
+            return analysis
     
     except Exception as e:
         print(f"  ❌ Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -925,6 +771,49 @@ async def get_ai_insights(data: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/corner-performance/{track_name}")
+async def get_corner_performance(track_name: str):
+    """Get corner-type performance matrix using REAL FastF1 telemetry + ML/Physics fallback"""
+    try:
+        from analysis.corner_performance_analyzer import CornerPerformanceAnalyzer
+        
+        print(f"\n🏁 CORNER PERFORMANCE ANALYSIS: {track_name}")
+        
+        # Initialize analyzer
+        analyzer = CornerPerformanceAnalyzer()
+        
+        # Analyze all teams for this track (will use real FastF1 data when available)
+        performance_data = analyzer.analyze_all_teams(track_name, use_real_data=True)
+        
+        # Count data sources
+        real_count = sum(1 for team in performance_data.values() if team.get('data_source') == 'REAL_TELEMETRY')
+        ml_count = len(performance_data) - real_count
+        
+        print(f"\n  ✅ Analysis complete for {len(performance_data)} teams")
+        print(f"     REAL FastF1 Data: {real_count} teams")
+        print(f"     ML/Physics Fallback: {ml_count} teams")
+        
+        # Add metadata summary
+        result = {
+            'teams': performance_data,
+            'metadata': {
+                'track': track_name,
+                'total_teams': len(performance_data),
+                'real_telemetry_count': real_count,
+                'ml_physics_count': ml_count,
+                'data_quality': 'REAL' if real_count > 5 else 'MIXED' if real_count > 0 else 'SIMULATED'
+            }
+        }
+        
+        return result
+    
+    except Exception as e:
+        print(f"  ❌ Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     print("\n" + "="*60)
     print("🏎️  F1 AERO ANALYSIS API SERVER - LIVE ML MODE")
@@ -940,6 +829,7 @@ if __name__ == "__main__":
     print("  ✓ ML Upgrade Recommender")
     print("  ✓ Computer Vision Car Analyzer")
     print("  ✓ Component Analyzer")
+    print("  ✓ Corner Performance Analyzer (NEW!)")
     print("="*60 + "\n")
     
     uvicorn.run(app, host="0.0.0.0", port=5000, log_level="info")

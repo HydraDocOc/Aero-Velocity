@@ -58,7 +58,6 @@ const Dashboard = () => {
   const [performanceData, setPerformanceData] = useState(null);
   const [radarData, setRadarData] = useState([]);
   const [scatterData, setScatterData] = useState([]);
-  const [heatmapData, setHeatmapData] = useState([]);
 
   // Load tracks on mount
   useEffect(() => {
@@ -174,17 +173,6 @@ const Dashboard = () => {
           }
         }
         setScatterData(scatter);
-
-        // Generate heatmap data (Component performance across tracks)
-        if (componentsResponse && Object.keys(componentsResponse).length > 0) {
-          const heatmap = Object.entries(componentsResponse).map(([name, data]) => ({
-            component: name.length > 15 ? name.substring(0, 15) + '...' : name,
-            efficiency: (data.efficiency * 100).toFixed(0),
-            improvement: (data.improvement_potential * 100).toFixed(0),
-            drag: (data.drag_contribution * 100).toFixed(0) || 0
-          }));
-          setHeatmapData(heatmap);
-        }
 
       } catch (error) {
         console.error('Error loading dashboard data:', error);
@@ -481,47 +469,6 @@ const Dashboard = () => {
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
-          </div>
-
-          {/* Component Heatmap Bar Chart */}
-          <div className="chart-card" style={{ padding: '20px', marginBottom: '20px' }}>
-            <h4 style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <BarChart3 size={18} color="#ff8700" />
-              Component Performance Heatmap
-            </h4>
-            {heatmapData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <RechartsBarChart data={heatmapData} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0, 210, 255, 0.1)" />
-                  <XAxis 
-                    type="number" 
-                    domain={[0, 100]}
-                    tick={{ fill: 'rgba(255, 255, 255, 0.7)', fontSize: 11 }}
-                  />
-                  <YAxis 
-                    type="category" 
-                    dataKey="component" 
-                    tick={{ fill: 'rgba(255, 255, 255, 0.7)', fontSize: 10 }}
-                    width={120}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      background: 'rgba(0, 0, 0, 0.9)',
-                      border: '2px solid #00d2ff',
-                      borderRadius: '8px',
-                      color: '#fff'
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="efficiency" fill="#00ff88" name="Efficiency %" />
-                  <Bar dataKey="improvement" fill="#ff8700" name="Improvement Potential %" />
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ padding: '60px', textAlign: 'center', color: 'rgba(255, 255, 255, 0.5)' }}>
-                {loading ? 'Loading component data...' : 'Adjust settings to see heatmap'}
-              </div>
-            )}
           </div>
 
           {/* Quick Stats */}

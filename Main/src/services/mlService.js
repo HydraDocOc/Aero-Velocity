@@ -188,6 +188,15 @@ class MLService {
   }
 
   /**
+   * Get corner-type performance matrix for a track
+   */
+  async getCornerPerformance(trackName) {
+    return this.request(`/corner-performance/${trackName}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
    * Build aero config from UI inputs
    */
   buildAeroConfig(params) {
@@ -228,8 +237,8 @@ export const TEAMS = [
   'Aston Martin',
   'Alpine',
   'Williams',
-  'AlphaTauri',
-  'Alfa Romeo',
+  'Racing Bulls',
+  'Kick Sauber',
   'Haas',
 ];
 

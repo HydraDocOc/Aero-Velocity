@@ -16,44 +16,230 @@
   --shadow-glow: 0 8px 32px rgba(255, 42, 77, 0.3);
 }
 
-/* Page Layout */
-.compare-page {
-  padding: 32px 20px 60px;
-  min-height: calc(100vh - 80px);
-  max-width: 1400px;
-  margin: 0 auto;
+/* ========================================
+   ENHANCED ANIMATED BACKGROUND
+   ======================================== */
+
+/* Fixed Background Layer */
+.compare-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(1200px 400px at 30% 20%, rgba(0, 40, 100, 0.35) 0%, rgba(0, 40, 100, 0.0) 60%),
+    radial-gradient(900px 300px at 70% 70%, rgba(0, 60, 120, 0.3) 0%, rgba(0, 60, 120, 0.0) 65%),
+    radial-gradient(800px 600px at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 70%),
+    linear-gradient(180deg, #0a0e1f 0%, #0d1429 50%, #050810 100%);
+  z-index: -1;
+  pointer-events: none;
 }
 
-/* Background Effects */
+/* Speed Lines Animation */
+.compare-page::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    rgba(0, 150, 255, 0.04) 1px,
+    transparent 1px,
+    transparent 120px
+  );
+  animation: moveSpeedLines 25s linear infinite;
+  opacity: 0.6;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes moveSpeedLines {
+  from {
+    transform: translateX(-120px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Page Layout */
+.compare-page {
+  padding: 3rem 2rem 60px;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Animated Grid Overlay */
+.compare-page .grid-overlay {
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 150, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 102, 204, 0.02) 1px, transparent 1px);
+  background-size: 100px 100px;
+  animation: gridShift 30s linear infinite;
+  opacity: 0.4;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes gridShift {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(100px, 100px);
+  }
+}
+
+/* Floating Gradient Orbs */
+.compare-page .gradient-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(140px);
+  opacity: 0.2;
+  animation: orbFloat 45s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.compare-page .orb-purple {
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(
+    circle, 
+    rgba(139, 92, 246, 0.6) 0%, 
+    rgba(124, 58, 237, 0.4) 30%,
+    transparent 70%
+  );
+  top: -400px;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.compare-page .orb-cyan {
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(
+    circle, 
+    rgba(0, 210, 255, 0.5) 0%,
+    rgba(0, 150, 220, 0.3) 30%, 
+    transparent 70%
+  );
+  bottom: -350px;
+  right: 10%;
+  animation-delay: 22s;
+}
+
+.compare-page .orb-red {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle, 
+    rgba(239, 68, 68, 0.4) 0%, 
+    rgba(220, 38, 38, 0.25) 30%,
+    transparent 70%
+  );
+  top: 50%;
+  right: -300px;
+  animation-delay: 15s;
+}
+
+@keyframes orbFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 0.2;
+  }
+  33% {
+    transform: translate(120px, -120px) scale(1.15) rotate(120deg);
+    opacity: 0.3;
+  }
+  66% {
+    transform: translate(-100px, 100px) scale(0.9) rotate(240deg);
+    opacity: 0.25;
+  }
+}
+
+/* Racing Track Lines */
+.compare-page .racing-track-lines {
+  position: fixed;
+  inset: 0;
+  opacity: 0.03;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.compare-page .racing-track-lines svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Diagonal Accent Lines */
+.compare-page .diagonal-lines {
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 200px,
+    rgba(0, 150, 255, 0.01) 200px,
+    rgba(0, 150, 255, 0.01) 202px
+  );
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Background Effects Container */
 .fx-bg {
-  position: absolute;
+  position: fixed;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
+  z-index: -1;
 }
 
 .fx-stripe {
   position: absolute;
   width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 42, 77, 0.35), transparent);
-  filter: blur(1px);
-  animation: slideRight 8s ease-in-out infinite;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 0.4), transparent);
+  filter: blur(2px);
+  animation: slideRight 12s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
 }
 
 .fx-stripe.s1 {
-  top: 140px;
+  top: 20%;
 }
 
 .fx-stripe.s2 {
-  top: 280px;
-  opacity: 0.6;
-  animation-delay: 2s;
+  top: 60%;
+  opacity: 0.7;
+  animation-delay: 4s;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.4), transparent);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.fx-stripe.s3 {
+  top: 80%;
+  opacity: 0.5;
+  animation-delay: 8s;
+  background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.35), transparent);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
 }
 
 @keyframes slideRight {
-  0%, 100% { transform: translateX(-100%); }
-  50% { transform: translateX(100%); }
+  0%, 100% { 
+    transform: translateX(-100%); 
+    opacity: 0;
+  }
+  10%, 90% {
+    opacity: 1;
+  }
+  50% { 
+    transform: translateX(100%); 
+  }
 }
 
 /* Header Section */
@@ -326,6 +512,7 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 20px;
   padding: 28px;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
@@ -668,6 +855,7 @@
   margin: 0 auto 30px;
   padding: 20px;
   background: rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;

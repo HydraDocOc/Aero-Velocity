@@ -54,7 +54,7 @@ class FastF1TelemetryLoader:
         'Aston Martin': 'Aston Martin',
         'Alpine': 'Alpine',
         'Williams': 'Williams',
-        'RB': 'RB',
+        'Racing Bulls': 'RB',
         'Kick Sauber': 'Sauber',
         'Haas': 'Haas F1 Team'
     }
@@ -226,43 +226,6 @@ class FastF1TelemetryLoader:
             print(f"       Fast: {corner_speeds['fast']:.1f} km/h")
         
         return results
-    
-    def get_team_telemetry_summary(self, team_name: str, track_name: str) -> Dict:
-        """
-        Get comprehensive telemetry summary for a team at a specific track
-        Returns average speeds, throttle usage, and performance metrics
-        """
-        print(f"\n📊 Loading telemetry summary for {team_name} at {track_name}")
-        
-        # Load session
-        session = self.load_session(track_name, 'Q')
-        if session is None:
-            return None
-        
-        # Get team data
-        team_fastf1_name = self.TEAM_MAPPING.get(team_name, team_name)
-        team_data = self.get_team_lap_telemetry(session, team_fastf1_name)
-        
-        if team_data is None:
-            return None
-        
-        telemetry = team_data['telemetry']
-        
-        # Calculate comprehensive statistics
-        summary = {
-            'avg_speed': telemetry['Speed'].mean(),
-            'max_speed': telemetry['Speed'].max(),
-            'min_speed': telemetry['Speed'].min(),
-            'avg_throttle': telemetry['Throttle'].mean(),
-            'avg_brake': telemetry['Brake'].mean(),
-            'corner_speed': telemetry[telemetry['Throttle'] < 50]['Speed'].mean() if len(telemetry[telemetry['Throttle'] < 50]) > 0 else 0,
-            'straight_speed': telemetry[telemetry['Throttle'] > 95]['Speed'].mean() if len(telemetry[telemetry['Throttle'] > 95]) > 0 else 0,
-            'lap_time_seconds': team_data['lap_time']
-        }
-        
-        print(f"   ✅ Summary loaded: Avg Speed={summary['avg_speed']:.1f} km/h, Max={summary['max_speed']:.1f}")
-        
-        return summary
     
     def get_sector_analysis(self, telemetry_data: pd.DataFrame) -> Dict:
         """

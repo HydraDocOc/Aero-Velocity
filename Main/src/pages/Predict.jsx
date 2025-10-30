@@ -164,6 +164,7 @@ const Predict = () => {
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>Team</label>
                   <select 
+                    className="select-control"
                     value={selectedTeam} 
                     onChange={(e) => setSelectedTeam(e.target.value)}
                     style={{ width: '100%', padding: '10px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '8px', color: 'white' }}
@@ -176,6 +177,7 @@ const Predict = () => {
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>Track</label>
                   <select 
+                    className="select-control"
                     value={selectedTrack} 
                     onChange={(e) => setSelectedTrack(e.target.value)}
                     style={{ width: '100%', padding: '10px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '8px', color: 'white' }}
@@ -200,11 +202,11 @@ const Predict = () => {
                 <div className="metrics">
                   <div className="metric">
                     <div className="label">Top Speed</div>
-                    <div className="value">{performanceData.top_speed?.toFixed(1) || 'N/A'} km/h</div>
+                    <div className="value">{performanceData.top_speed?.toFixed(2) || 'N/A'} km/h</div>
                   </div>
                   <div className="metric">
                     <div className="label">Corner Speed</div>
-                    <div className="value">{performanceData.avg_corner_speed?.toFixed(1) || 'N/A'} km/h</div>
+                    <div className="value">{performanceData.avg_corner_speed?.toFixed(2) || 'N/A'} km/h</div>
                   </div>
                   <div className="metric">
                     <div className="label">Downforce</div>

@@ -43,7 +43,7 @@ F1_TEAMS = [
     "Aston Martin",
     "Alpine",
     "Williams",
-    "RB",  # Racing Bulls
+    "Racing Bulls",
     "Kick Sauber",
     "Haas F1 Team"
 ]
@@ -57,7 +57,7 @@ TEAM_ABBREV = {
     "Aston Martin": "AMR",
     "Alpine": "ALP",
     "Williams": "WIL",
-    "RB": "RB",
+    "Racing Bulls": "RB",
     "Kick Sauber": "SAU",
     "Haas F1 Team": "HAA"
 }

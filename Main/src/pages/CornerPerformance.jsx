@@ -48,7 +48,7 @@ const CornerPerformanceMatrix = () => {
     'Aston Martin',
     'Alpine',
     'Williams',
-    'RB',
+    'Racing Bulls',
     'Kick Sauber',
     'Haas'
   ];
@@ -107,6 +107,13 @@ const CornerPerformanceMatrix = () => {
             [teams[0]]: teamData[teams[0]],
             [teams[teams.length-1]]: teamData[teams[teams.length-1]]
           });
+          
+          // Check Racing Bulls specifically
+          if (teamData['Racing Bulls']) {
+            console.log(`🏎️ Racing Bulls data:`, teamData['Racing Bulls']);
+          } else {
+            console.warn(`⚠️ Racing Bulls data NOT FOUND in response. Available teams:`, teams);
+          }
         }
         
         setPerformanceData(prev => ({
@@ -316,7 +323,7 @@ const CornerPerformanceMatrix = () => {
     'Aston Martin': '#006F62',
     'Alpine': '#0090FF',
     'Williams': '#005AFF',
-    'RB': '#2B4562',
+    'Racing Bulls': '#2B4562',
     'Kick Sauber': '#00E701',
     'Haas': '#B6BABD'
   };
