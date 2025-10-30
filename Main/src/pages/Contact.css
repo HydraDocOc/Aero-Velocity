@@ -1,0 +1,29 @@
+.contactus-hero { text-align: center; padding: 60px 0 20px 0; }
+.contactus-hero h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; }
+.contactus-breadcrumb { color: rgba(255,255,255,0.7); margin-top: 6px; }
+
+.contactus-section { padding: var(--spacing-xl) 0; }
+.contactus-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg); }
+
+.contactus-card { background: rgba(16,18,26,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: var(--spacing-md); }
+.form-card h2 { margin-bottom: 12px; }
+.form input, .form textarea { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; margin-bottom: 10px; }
+.form input:focus, .form textarea:focus { outline: none; border-color: #ff1a3d; box-shadow: 0 0 0 2px rgba(255,26,61,0.15); }
+.send-btn { width: 100%; padding: 12px; border-radius: 10px; background: linear-gradient(90deg, #ff1a3d, #ff7a00); color: #fff; font-weight: 700; border: none; }
+
+.info-card .info-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); margin-bottom: 12px; }
+.info-item { display: flex; gap: 10px; align-items: flex-start; background: rgba(255,255,255,0.04); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); }
+.info-item .ii { width: 28px; text-align: center; font-size: 1rem; }
+.info-item .label { color: rgba(255,255,255,0.8); font-weight: 700; }
+.info-item .value { color: rgba(255,255,255,0.85); }
+.info-lead { color: rgba(255,255,255,0.75); margin-bottom: 10px; }
+.info-image { height: 160px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.18); background: rgba(255,255,255,0.04); margin-top: 8px; }
+
+.contactus-banner { position: relative; margin: var(--spacing-xl) 0; height: 240px; background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.18); border-radius: 12px; overflow: hidden; }
+/* Replace the banner's background with your image by adding: background-image: url('/contact-hero.jpg'); background-size: cover; background-position: center; */
+.banner-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.45)); }
+.banner-text h3 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 900; margin-bottom: 10px; }
+.banner-btn { display: inline-block; padding: 10px 16px; border-radius: 10px; background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.18); }
+
+@media (max-width: 968px) { .contactus-grid { grid-template-columns: 1fr; } .info-card .info-row { grid-template-columns: 1fr; } }
+

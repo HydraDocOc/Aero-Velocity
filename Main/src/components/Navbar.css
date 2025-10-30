@@ -1,0 +1,132 @@
+/* ========================================
+   NAVBAR - FUTURISTIC GLASSMORPHISM
+   ======================================== */
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+  z-index: 1000;
+  padding: var(--spacing-sm) 0;
+}
+
+.navbar-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  transition: transform var(--transition-fast);
+}
+
+.navbar-logo:hover {
+  transform: scale(1.05);
+}
+
+.logo-text {
+  color: var(--color-text-primary);
+}
+
+.logo-accent {
+  color: var(--color-accent-blue);
+  text-shadow: 0 0 20px currentColor;
+}
+
+.navbar-menu {
+  display: flex;
+  list-style: none;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.navbar-link {
+  position: relative;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  transition: all var(--transition-fast);
+  border-radius: var(--radius-sm);
+}
+
+.navbar-link::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: var(--gradient-red);
+  transition: width var(--transition-normal);
+}
+
+.navbar-link:hover {
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.navbar-link:hover::before {
+  width: 80%;
+}
+
+.navbar-link.active {
+  color: var(--color-accent-red);
+  background: rgba(255, 0, 64, 0.1);
+}
+
+.navbar-link.active::before {
+  width: 80%;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .navbar-menu {
+    gap: var(--spacing-xs);
+  }
+  
+  .navbar-link {
+    font-size: 0.85rem;
+    padding: var(--spacing-xs);
+  }
+  
+  .navbar-logo {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar-container {
+    padding: 0 var(--spacing-sm);
+  }
+  
+  .navbar-menu {
+    gap: 0;
+  }
+  
+  .navbar-link {
+    font-size: 0.75rem;
+    padding: 4px;
+  }
+}
+

@@ -1,0 +1,101 @@
+/* ========================================
+   ANIMATED CARD - GLASSMORPHISM EFFECT
+   ======================================== */
+
+.animated-card {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  transition: all var(--transition-normal);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.animated-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+    rgba(255, 255, 255, 0.1) 0%, 
+    transparent 50%);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.animated-card:hover::before {
+  opacity: 1;
+}
+
+.card-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-lg);
+  opacity: 0;
+  transition: opacity var(--transition-slow);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.animated-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-glow);
+}
+
+.animated-card:hover .card-glow {
+  opacity: 1;
+}
+
+/* Red Gradient */
+.gradient-red .card-glow {
+  background: var(--gradient-red);
+  filter: blur(20px);
+}
+
+.gradient-red:hover {
+  border-color: rgba(255, 0, 64, 0.5);
+}
+
+/* Blue Gradient */
+.gradient-blue .card-glow {
+  background: var(--gradient-blue);
+  filter: blur(20px);
+}
+
+.gradient-blue:hover {
+  border-color: rgba(0, 212, 255, 0.5);
+}
+
+/* Purple Gradient */
+.gradient-purple .card-glow {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  filter: blur(20px);
+}
+
+.gradient-purple:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.card-content {
+  position: relative;
+  z-index: 1;
+}
+
+.card-icon {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-sm);
+  opacity: 0.8;
+}
+
+.card-content h3 {
+  margin-bottom: var(--spacing-xs);
+  font-size: 1.5rem;
+}
+
+.card-content p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+

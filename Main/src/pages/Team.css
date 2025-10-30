@@ -1,0 +1,75 @@
+.compare-page {
+  padding: var(--spacing-xl) 0;
+  min-height: calc(100vh - 80px);
+}
+
+.compare-header {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.compare-header h1 {
+  margin-bottom: var(--spacing-xs);
+}
+
+.compare-header p {
+  font-size: 1.2rem;
+  color: var(--color-accent-blue);
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.compare-card {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-normal);
+}
+
+.compare-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-glow);
+}
+
+.compare-card-content {
+  text-align: center;
+}
+
+.compare-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0 auto var(--spacing-sm);
+}
+
+.compare-card h3 {
+  margin-bottom: var(--spacing-xs);
+  font-size: 1.5rem;
+}
+
+.compare-role {
+  color: var(--color-accent-blue);
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+}
+
+.compare-task {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 640px) {
+  .compare-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
