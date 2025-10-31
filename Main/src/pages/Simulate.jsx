@@ -288,7 +288,7 @@ const Simulate = () => {
                   }}>
                     <Trophy size={20} color="#ff2a4d" />
                     <span style={{ color: '#ff2a4d', fontWeight: '700', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                      Simulated Lap Times
+                      Calculated Speeds
                     </span>
                   </div>
                   <h2 style={{ 

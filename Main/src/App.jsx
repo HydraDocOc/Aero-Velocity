@@ -9,6 +9,8 @@ import Chat from './pages/Chat';
 import Compare from './pages/Compare';
 import CornerPerformance from './pages/CornerPerformance';
 import Contact from './pages/Contact';
+import Quiz from './pages/Quiz';
+import Regulations2026 from './pages/Regulations2026';
 import './App.css';
 
 function App() {
@@ -28,6 +30,8 @@ function App() {
             <Route path="/compare" element={<Compare />} />
             <Route path="/corner-performance" element={<CornerPerformance />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/quiz" element={<Quiz />} />
+            <Route path="/regulations-2026" element={<Regulations2026 />} />
             <Route path="/auth" element={<Auth />} />
           </Routes>
         </main>
