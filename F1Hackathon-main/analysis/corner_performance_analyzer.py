@@ -440,6 +440,7 @@ class CornerPerformanceAnalyzer:
                 print("  → Using ML + Physics for all teams")
         
         # STEP 2: Build results with hybrid approach
+        # Prioritize REAL FastF1 data for all teams
         for team in list(team_aero_configs.keys()):
             aero_config = team_aero_configs[team]
             
@@ -447,10 +448,27 @@ class CornerPerformanceAnalyzer:
             if real_data and team in real_data:
                 # REAL DATA from FastF1 ✅
                 corner_speeds = real_data[team]
-                data_source = 'REAL_TELEMETRY'
-                print(f"  🏆 {team}: REAL FastF1 data - Slow: {corner_speeds['slow']:.1f}, Med: {corner_speeds['medium']:.1f}, Fast: {corner_speeds['fast']:.1f}")
+                # Validate that we have proper real data (not fallback values)
+                if (corner_speeds.get('slow', 0) > 0 and 
+                    corner_speeds.get('medium', 0) > 0 and 
+                    corner_speeds.get('fast', 0) > 0 and
+                    corner_speeds.get('slow', 0) != 145 and  # Not default fallback
+                    corner_speeds.get('medium', 0) != 215 and  # Not default fallback
+                    corner_speeds.get('fast', 0) != 310):  # Not default fallback
+                    data_source = 'REAL_TELEMETRY'
+                    print(f"  🏆 {team}: REAL FastF1 data - Slow: {corner_speeds['slow']:.1f}, Med: {corner_speeds['medium']:.1f}, Fast: {corner_speeds['fast']:.1f}")
+                else:
+                    # Data looks like fallback, use ML/Physics instead
+                    team_perf_ml = self.analyze_team_corner_performance(team, track_name, aero_config)
+                    corner_speeds = {
+                        'slow': team_perf_ml['slow'],
+                        'medium': team_perf_ml['medium'],
+                        'fast': team_perf_ml['fast']
+                    }
+                    data_source = 'ML_PHYSICS'
+                    print(f"  🤖 {team}: ML/Physics (FastF1 returned fallback) - Slow: {corner_speeds['slow']:.1f}, Med: {corner_speeds['medium']:.1f}, Fast: {corner_speeds['fast']:.1f}")
             else:
-                # ML + PHYSICS PREDICTION (Fallback)
+                # ML + PHYSICS PREDICTION (Fallback when no FastF1 data)
                 team_perf_ml = self.analyze_team_corner_performance(team, track_name, aero_config)
                 corner_speeds = {
                     'slow': team_perf_ml['slow'],
@@ -458,7 +476,7 @@ class CornerPerformanceAnalyzer:
                     'fast': team_perf_ml['fast']
                 }
                 data_source = 'ML_PHYSICS'
-                print(f"  🤖 {team}: ML/Physics - Slow: {corner_speeds['slow']:.1f}, Med: {corner_speeds['medium']:.1f}, Fast: {corner_speeds['fast']:.1f}")
+                print(f"  🤖 {team}: ML/Physics (No FastF1 data) - Slow: {corner_speeds['slow']:.1f}, Med: {corner_speeds['medium']:.1f}, Fast: {corner_speeds['fast']:.1f}")
             
             # STEP 3: Generate ML insights (always)
             insights = self._generate_ai_insights(corner_speeds, team)

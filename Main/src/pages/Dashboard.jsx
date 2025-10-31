@@ -278,28 +278,6 @@ const Dashboard = () => {
             <h3>Car Settings</h3>
           </div>
 
-          {/* Team Selection */}
-          <div className="car-selection">
-            <h4>Select Team</h4>
-            <div className="car-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-              {TEAMS.map((team) => (
-                <motion.div
-                  key={team}
-                  className={`car-item ${selectedTeam === team ? 'active' : ''}`}
-                  onClick={() => setSelectedTeam(team)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div 
-                    className="car-color-indicator" 
-                    style={{ backgroundColor: '#00d2ff' }}
-                  />
-                  <span style={{ fontSize: '13px' }}>{team}</span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
           {/* Track Selection */}
           <div className="car-selection" style={{ marginTop: '20px' }}>
             <h4>Select Track</h4>
@@ -336,42 +314,6 @@ const Dashboard = () => {
                   className="modern-slider"
                 />
                 <span className="slider-value">{carSettings.aeroEfficiency}%</span>
-              </div>
-            </div>
-
-            <div className="control-group">
-              <label>
-                <Zap size={16} />
-                Engine Power
-              </label>
-              <div className="slider-container">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={carSettings.enginePower}
-                  onChange={(e) => handleSettingChange('enginePower', parseInt(e.target.value))}
-                  className="modern-slider"
-                />
-                <span className="slider-value">{carSettings.enginePower}%</span>
-              </div>
-            </div>
-
-            <div className="control-group">
-              <label>
-                <Car size={16} />
-                Tire Grip
-              </label>
-              <div className="slider-container">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={carSettings.tireGrip}
-                  onChange={(e) => handleSettingChange('tireGrip', parseInt(e.target.value))}
-                  className="modern-slider"
-                />
-                <span className="slider-value">{carSettings.tireGrip}%</span>
               </div>
             </div>
           </div>
@@ -499,15 +441,6 @@ const Dashboard = () => {
                 {performanceData?.ld_ratio?.toFixed(2) || ((carSettings.clFront + carSettings.clRear) / carSettings.dragCoefficient).toFixed(2)}
               </div>
               <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)' }}>efficiency</div>
-            </div>
-            <div className="chart-card" style={{ padding: '15px', textAlign: 'center' }}>
-              <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px' }}>
-                Balance
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#ff2a4d' }}>
-                {performanceData?.overall_balance?.toFixed(0) || '40'}%
-              </div>
-              <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)' }}>front bias</div>
             </div>
           </div>
         </motion.div>

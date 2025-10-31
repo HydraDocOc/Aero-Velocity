@@ -798,6 +798,51 @@
     height: 48px;
   }
   
+  /* Respect user preference for reduced motion: disable animations and heavy transitions */
+  @media (prefers-reduced-motion: reduce) {
+    .compare-page::after,
+    .compare-page .grid-overlay,
+    .compare-page .gradient-orb,
+    .fx-stripe,
+    .title-underline,
+    .upload-icon,
+    .uploader.pulse,
+    .bar::after,
+    .compare-card:hover,
+    .metric-card,
+    .animate-in,
+    .compare-btn,
+    .compare-btn::before,
+    .orb-purple,
+    .orb-cyan,
+    .orb-red,
+    .fx-bg,
+    .glow-divider,
+    .grid-overlay,
+    .diagonal-lines {
+      animation: none !important;
+      transition-duration: 0s !important;
+      transform: none !important;
+      filter: none !important;
+      opacity: 0.95 !important;
+    }
+  
+    /* Reduce blur and heavy filter effects for readability */
+    .compare-page .gradient-orb,
+    .fx-bg,
+    .compare-page::before {
+      filter: none !important;
+      backdrop-filter: none !important;
+    }
+  
+    /* Remove shimmer/moving highlights */
+    .bar::after,
+    .compare-btn::before,
+    .upload-icon {
+      display: none !important;
+    }
+  }
+  
   .compare-btn {
     font-size: 1rem;
     padding: 14px 20px;

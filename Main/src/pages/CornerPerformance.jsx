@@ -130,10 +130,14 @@ const CornerPerformanceMatrix = () => {
   }, [selectedTrack]);
 
   const getColor = (value, type) => {
+    // Realistic F1 apex speed ranges (from real telemetry):
+    // Slow: Monaco hairpin ~50-70 km/h, tight chicanes ~60-85 km/h, general ~70-100 km/h
+    // Medium: ~100-150 km/h typical, faster ~130-180 km/h
+    // Fast: Spa Eau Rouge ~280-310 km/h, Copse/Lesmo ~250-300 km/h
     const ranges = {
-      slow: { min: 140, max: 160 },
-      medium: { min: 205, max: 230 },
-      fast: { min: 300, max: 330 }
+      slow: { min: 40, max: 110 },    // Monaco hairpin ~50-70 km/h
+      medium: { min: 90, max: 180 },   // Typical medium corners
+      fast: { min: 180, max: 320 }     // Spa Eau Rouge ~280-310 km/h
     };
     const range = ranges[type];
     const normalized = (value - range.min) / (range.max - range.min);
@@ -144,10 +148,14 @@ const CornerPerformanceMatrix = () => {
   };
 
   const getPerformanceLevel = (value, type) => {
+    // Realistic F1 apex speed ranges (from real telemetry):
+    // Slow corners: 40-110 km/h apex (Monaco hairpin ~50-70 km/h, general ~70-100 km/h)
+    // Medium corners: 90-180 km/h apex (typical ~100-150 km/h)
+    // Fast corners: 180-320 km/h apex (Spa Eau Rouge ~280-310 km/h)
     const ranges = {
-      slow: { min: 140, max: 160 },
-      medium: { min: 205, max: 230 },
-      fast: { min: 300, max: 330 }
+      slow: { min: 40, max: 110 },
+      medium: { min: 90, max: 180 },
+      fast: { min: 180, max: 320 }
     };
     const range = ranges[type];
     const normalized = (value - range.min) / (range.max - range.min);
@@ -159,25 +167,37 @@ const CornerPerformanceMatrix = () => {
   };
 
   const getAIInsights = (car) => {
-    const data = performanceData[selectedTrack][car];
+    const data = performanceData[selectedTrack]?.[car];
     if (!data) return [];
+    
+    // Use backend-generated insights if available (from real FastF1 data)
+    if (data.ai_insights && Array.isArray(data.ai_insights) && data.ai_insights.length > 0) {
+      return data.ai_insights;
+    }
+    
+    // Fallback to frontend-generated insights if backend didn't provide them
     const insights = [];
     
-    if (data.slow >= 155) {
+    // Realistic thresholds for apex speeds (track-specific):
+    // Slow corners: Excellent >=85 km/h (tight tracks), >=75 km/h (normal), Poor <=55 km/h
+    // Medium corners: Excellent >=150 km/h, Poor <=110 km/h
+    // Fast corners: Excellent >=280 km/h, Poor <=220 km/h
+    
+    if (data.slow >= 85) {
       insights.push({ type: 'strength', text: 'Dominant in slow-speed corners - excellent mechanical grip' });
-    } else if (data.slow <= 145) {
+    } else if (data.slow <= 55) {
       insights.push({ type: 'weakness', text: 'Struggles in slow corners - improve low-speed downforce' });
     }
     
-    if (data.fast >= 320) {
+    if (data.fast >= 280) {
       insights.push({ type: 'strength', text: 'Superior high-speed stability - strong aerodynamic package' });
-    } else if (data.fast <= 310) {
+    } else if (data.fast <= 220) {
       insights.push({ type: 'weakness', text: 'Losing time in fast corners - increase rear downforce by ~5%' });
     }
     
-    if (data.medium >= 220) {
+    if (data.medium >= 150) {
       insights.push({ type: 'strength', text: 'Excellent mid-corner balance' });
-    } else if (data.medium <= 212) {
+    } else if (data.medium <= 110) {
       insights.push({ type: 'weakness', text: 'Mid-corner instability detected' });
     }
     
@@ -185,11 +205,23 @@ const CornerPerformanceMatrix = () => {
   };
 
   const getEngineeringRecommendations = (car) => {
-    const data = performanceData[selectedTrack][car];
+    const data = performanceData[selectedTrack]?.[car];
     if (!data) return [];
+    
+    // Use backend-generated recommendations if available (from real FastF1 data)
+    if (data.engineering_recommendations && Array.isArray(data.engineering_recommendations) && data.engineering_recommendations.length > 0) {
+      return data.engineering_recommendations;
+    }
+    
+    // Fallback to frontend-generated recommendations if backend didn't provide them
     const recommendations = [];
 
-    if (data.slow <= 145) {
+    // Realistic thresholds for apex speeds:
+    // Slow corners: Poor <=55 km/h, Marginal 55-70 km/h
+    // Medium corners: Poor <=110 km/h, Marginal 110-130 km/h
+    // Fast corners: Poor <=220 km/h, Marginal 220-260 km/h
+    
+    if (data.slow <= 55) {
       recommendations.push({
         priority: 'High',
         area: 'Slow Corners',
@@ -201,7 +233,7 @@ const CornerPerformanceMatrix = () => {
           'Optimize tire pressure: reduce front by 0.2 PSI for better contact patch'
         ]
       });
-    } else if (data.slow <= 150) {
+    } else if (data.slow <= 70) {
       recommendations.push({
         priority: 'Medium',
         area: 'Slow Corners',
@@ -210,7 +242,7 @@ const CornerPerformanceMatrix = () => {
       });
     }
 
-    if (data.medium <= 212) {
+    if (data.medium <= 110) {
       recommendations.push({
         priority: 'High',
         area: 'Medium Corners',
@@ -222,7 +254,7 @@ const CornerPerformanceMatrix = () => {
           'Consider raising ride height by 2mm for better aero balance'
         ]
       });
-    } else if (data.medium <= 218) {
+    } else if (data.medium <= 130) {
       recommendations.push({
         priority: 'Medium',
         area: 'Medium Corners',
@@ -231,7 +263,7 @@ const CornerPerformanceMatrix = () => {
       });
     }
 
-    if (data.fast <= 310) {
+    if (data.fast <= 220) {
       recommendations.push({
         priority: 'Critical',
         area: 'Fast Corners',
@@ -244,7 +276,7 @@ const CornerPerformanceMatrix = () => {
           'Consider DRS optimization for straight-line speed recovery'
         ]
       });
-    } else if (data.fast <= 318) {
+    } else if (data.fast <= 260) {
       recommendations.push({
         priority: 'Medium',
         area: 'Fast Corners',
@@ -579,243 +611,6 @@ const CornerPerformanceMatrix = () => {
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Stats Overview - Dynamic Ranges */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
-          gap: '1.5rem', 
-          marginBottom: '3rem' 
-        }}>
-          {(() => {
-            // Calculate actual min/max for current track
-            const trackData = performanceData[selectedTrack];
-            const slowSpeeds = ALL_TEAMS.map(team => trackData[team]?.slow || 150).filter(v => v);
-            const mediumSpeeds = ALL_TEAMS.map(team => trackData[team]?.medium || 215).filter(v => v);
-            const fastSpeeds = ALL_TEAMS.map(team => trackData[team]?.fast || 315).filter(v => v);
-            
-            const stats = [
-              { 
-                icon: Zap, 
-                color: '#facc15', 
-                title: 'Slow Corners', 
-                range: `${Math.min(...slowSpeeds).toFixed(0)}-${Math.max(...slowSpeeds).toFixed(0)}`, 
-                desc: 'Mechanical Grip Focus', 
-                gradient: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)' 
-              },
-              { 
-                icon: TrendingUp, 
-                color: '#3b82f6', 
-                title: 'Medium Corners', 
-                range: `${Math.min(...mediumSpeeds).toFixed(0)}-${Math.max(...mediumSpeeds).toFixed(0)}`, 
-                desc: 'Balanced Performance', 
-                gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' 
-              },
-              { 
-                icon: Activity, 
-                color: '#10b981', 
-                title: 'Fast Corners', 
-                range: `${Math.min(...fastSpeeds).toFixed(0)}-${Math.max(...fastSpeeds).toFixed(0)}`, 
-                desc: 'Aerodynamic Efficiency', 
-                gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
-              }
-            ];
-            
-            return stats.map((stat, idx) => (
-            <div key={idx} style={{
-              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%)',
-              padding: '2.5rem',
-              borderRadius: '1.5rem',
-              border: `2px solid ${stat.color}40`,
-              backdropFilter: 'blur(20px)',
-              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              position: 'relative',
-              overflow: 'hidden',
-              animation: `fadeIn 0.6s ease-out ${0.2 + idx * 0.15}s forwards`,
-              opacity: 0
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
-              e.currentTarget.style.boxShadow = `0 25px 50px ${stat.color}40`;
-              e.currentTarget.style.borderColor = stat.color;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.borderColor = `${stat.color}40`;
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '150px',
-                height: '150px',
-                background: stat.gradient,
-                borderRadius: '50%',
-                opacity: 0.1,
-                filter: 'blur(40px)',
-                pointerEvents: 'none'
-              }}></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem', position: 'relative', zIndex: 1 }}>
-                <div style={{
-                  width: '60px',
-                  height: '60px',
-                  background: stat.gradient,
-                  borderRadius: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: `0 10px 30px ${stat.color}60`
-                }}>
-                  <stat.icon size={36} color="#fff" />
-                </div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#e2e8f0', margin: 0 }}>{stat.title}</h3>
-              </div>
-              <p style={{ fontSize: '3rem', fontWeight: '900', color: '#fff', margin: '1rem 0', position: 'relative', zIndex: 1 }}>{stat.range}</p>
-              <p style={{ fontSize: '1rem', color: '#94a3b8', margin: 0, fontWeight: '600', position: 'relative', zIndex: 1 }}>km/h • {stat.desc}</p>
-            </div>
-            ));
-          })()}
-        </div>
-
-        {/* Enhanced Bar Chart */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)',
-          padding: '2.5rem',
-          borderRadius: '1.5rem',
-          border: '2px solid rgba(239, 68, 68, 0.4)',
-          backdropFilter: 'blur(20px)',
-          marginBottom: '3rem',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
-            <div style={{
-              width: '50px',
-              height: '50px',
-              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-              borderRadius: '0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 10px 30px rgba(239, 68, 68, 0.5)'
-            }}>
-              <BarChart3 size={28} color="#fff" />
-            </div>
-            <h2 style={{ fontSize: '2.25rem', fontWeight: '800', color: '#ef4444', margin: 0, letterSpacing: '0.5px' }}>
-              Team Comparison - {selectedTrack}
-            </h2>
-          </div>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8', fontSize: '1.25rem' }}>
-              <div style={{ animation: 'spin 1s linear infinite', display: 'inline-block', marginBottom: '1rem' }}>⚙️</div>
-              <p>Loading telemetry data...</p>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={getBarChartData()} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="#9CA3AF" 
-                  tick={{ fill: '#CBD5E1', fontSize: 12, fontWeight: 600 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis 
-                  stroke="#9CA3AF" 
-                  tick={{ fill: '#CBD5E1', fontSize: 12, fontWeight: 600 }}
-                  label={{ value: 'Speed (km/h)', angle: -90, position: 'insideLeft', fill: '#CBD5E1', fontSize: 14, fontWeight: 700 }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(15, 23, 42, 0.95)', 
-                    border: '2px solid #EF4444', 
-                    borderRadius: '0.75rem',
-                    backdropFilter: 'blur(10px)',
-                    padding: '1rem',
-                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)'
-                  }}
-                  labelStyle={{ color: '#F3F4F6', fontWeight: '700', marginBottom: '0.5rem', fontSize: '1.1rem' }}
-                  itemStyle={{ color: '#CBD5E1', fontWeight: '600' }}
-                />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '2rem' }}
-                  iconType="circle"
-                />
-                <Bar dataKey="Slow" fill="#fbbf24" radius={[10, 10, 0, 0]} />
-                <Bar dataKey="Medium" fill="#3b82f6" radius={[10, 10, 0, 0]} />
-                <Bar dataKey="Fast" fill="#10b981" radius={[10, 10, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        {/* Line Chart - Performance Trends */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.95) 100%)',
-          padding: '2.5rem',
-          borderRadius: '1.5rem',
-          border: '2px solid rgba(59, 130, 246, 0.4)',
-          backdropFilter: 'blur(20px)',
-          marginBottom: '3rem',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
-            <div style={{
-              width: '50px',
-              height: '50px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              borderRadius: '0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 10px 30px rgba(59, 130, 246, 0.5)'
-            }}>
-              <Activity size={28} color="#fff" />
-            </div>
-            <h2 style={{ fontSize: '2.25rem', fontWeight: '800', color: '#3b82f6', margin: 0, letterSpacing: '0.5px' }}>
-              Corner Type Performance Trends
-            </h2>
-          </div>
-          <ResponsiveContainer width="100%" height={350}>
-            <ComposedChart data={getLineChartData()}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-              <XAxis 
-                dataKey="name" 
-                stroke="#9CA3AF"
-                tick={{ fill: '#CBD5E1', fontSize: 14, fontWeight: 600 }}
-              />
-              <YAxis 
-                stroke="#9CA3AF"
-                tick={{ fill: '#CBD5E1', fontSize: 12, fontWeight: 600 }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'rgba(15, 23, 42, 0.95)', 
-                  border: '2px solid #3b82f6', 
-                  borderRadius: '0.75rem',
-                  backdropFilter: 'blur(10px)',
-                  padding: '1rem'
-                }}
-                labelStyle={{ color: '#F3F4F6', fontWeight: '700', fontSize: '1.1rem' }}
-              />
-              <Legend wrapperStyle={{ paddingTop: '2rem' }} />
-              {ALL_TEAMS.map((team, idx) => (
-                <Line 
-                  key={team}
-                  type="monotone" 
-                  dataKey={team.replace(' Racing', '').substring(0, 12)} 
-                  stroke={teamColors[team] || '#8b5cf6'}
-                  strokeWidth={2}
-                  dot={{ r: 5, strokeWidth: 2 }}
-                  activeDot={{ r: 7 }}
-                />
-              ))}
-            </ComposedChart>
-          </ResponsiveContainer>
         </div>
 
         {/* Minimalist Heatmap Table */}
